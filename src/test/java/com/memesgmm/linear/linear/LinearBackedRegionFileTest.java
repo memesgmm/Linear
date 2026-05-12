@@ -44,7 +44,7 @@ class LinearBackedRegionFileTest {
         try {
             LinearBackedRegionFile backed = LinearBackedRegionFile.create(region);
             ChunkPos pos = new ChunkPos(2, 3);
-            CompoundTag expected = testChunk(pos.x, pos.z);
+            CompoundTag expected = testChunk(com.memesgmm.linear.util.LinearCompat.getChunkX(pos), com.memesgmm.linear.util.LinearCompat.getChunkZ(pos));
 
             byte[] encoded = encodeVanillaChunkBuffer(expected);
             ByteBuffer windowed = ByteBuffer.wrap(new byte[encoded.length + 23]);
@@ -76,7 +76,7 @@ class LinearBackedRegionFileTest {
             ChunkPos pos = new ChunkPos(2, 3);
 
             try (DataOutputStream out = backed.getChunkDataOutputStream(pos)) {
-                NbtIo.write(testChunk(pos.x, pos.z), out);
+                NbtIo.write(testChunk(com.memesgmm.linear.util.LinearCompat.getChunkX(pos), com.memesgmm.linear.util.LinearCompat.getChunkZ(pos)), out);
             }
 
             backed.clearChunk(pos);

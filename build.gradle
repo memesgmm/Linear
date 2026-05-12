@@ -3,10 +3,18 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.75'
+    id 'net.neoforged.moddev' version '2.0.141'
 }
 
-version = mod_version
+// Build Profiles
+def target = project.findProperty('buildTarget') ?: 'legacy'
+def mcVersion = project.findProperty('mcVersionOverride') ?: (target == 'modern' ? '26.1.2' : minecraft_version)
+def neoVersion = project.findProperty('neoVersionOverride') ?: (target == 'modern' ? '26.1.2.48-beta' : neo_version)
+def javaVersion = target == 'modern' ? 25 : 21
+def junitVersion = target == 'modern' ? '5.13.4' : '5.11.0'
+def junitLauncherVersion = target == 'modern' ? '1.13.4' : '1.11.0'
+
+version = "${mod_version}-${target}"
 group = mod_group_id
 
 repositories {
@@ -14,23 +22,36 @@ repositories {
 }
 
 base {
-    archivesName = mod_id
+    archivesName = "${mod_id}-${mcVersion}"
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(javaVersion)
 
 configurations {
     zstdRuntime
 }
 
 dependencies {
-    testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
+    testImplementation platform("org.junit:junit-bom:${junitVersion}")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testImplementation "org.junit.platform:junit-platform-launcher"
     testRuntimeOnly 'com.github.luben:zstd-jni:1.5.5-11'
     zstdRuntime 'com.github.luben:zstd-jni:1.5.5-11'
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'org.junit.platform') {
+            details.useVersion junitLauncherVersion
+        }
+        if (details.requested.group == 'org.junit.jupiter') {
+            details.useVersion junitVersion
+        }
+    }
+}
+
 neoForge {
-    version = project.hasProperty('neoVersionOverride') ? project.neoVersionOverride : neo_version
+    version = neoVersion
 
     runs {
         configureEach {
@@ -96,10 +117,14 @@ tasks.withType(ProcessResources).configureEach {
         into 'META-INF/linear-libs'
         rename { 'zstd-jni.jar' }
     }
-    var mcVersion = project.hasProperty('mcVersionOverride') ? project.mcVersionOverride : minecraft_version
+    def mcVersionRange = target == 'modern' ? '[26, 27)' : '[1.21, 1.22)'
+    def neoVersionRange = target == 'modern' ? '[26, )' : '[21, )'
+    
     var replaceProperties = [
             minecraft_version      : mcVersion,
-            neo_version            : neo_version,
+            neo_version            : neoVersion,
+            minecraft_version_range: mcVersionRange,
+            neo_version_range      : neoVersionRange,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
@@ -113,3 +138,5 @@ tasks.withType(ProcessResources).configureEach {
         expand replaceProperties
     }
 }
+
+

@@ -6,9 +6,7 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.storage.RegionFile;
 import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
 
 import net.minecraft.nbt.NbtAccounter;
 import java.io.DataInputStream;
@@ -44,7 +42,7 @@ public class LinearBenchmark {
         System.out.println("---------------------------------------------------------");
 
         RegionStorageInfo dummyInfo = new RegionStorageInfo("benchmark", 
-            ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse("minecraft:overworld")), 
+            net.minecraft.world.level.Level.OVERWORLD, 
             "region");
 
         for (Path linearPath : linearFiles) {

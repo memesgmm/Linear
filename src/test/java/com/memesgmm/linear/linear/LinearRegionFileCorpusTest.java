@@ -6,6 +6,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.ChunkPos;
+import com.memesgmm.linear.util.NbtCompat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,12 +50,12 @@ class LinearRegionFileCorpusTest {
         LinearRegionFile region = new LinearRegionFile(file, false, LinearTestSupport.dummyStorageInfo());
         try {
             CompoundTag entityChunk = readChunk(region, new ChunkPos(1, 0));
-            ListTag entities = entityChunk.getList("entities", Tag.TAG_COMPOUND);
+            ListTag entities = NbtCompat.getList(entityChunk, "entities", Tag.TAG_COMPOUND);
             assertEquals(1, entities.size());
 
             CompoundTag wrappedChunk = readChunk(region, new ChunkPos(2, 0));
-            assertTrue(wrappedChunk.contains("Level", Tag.TAG_COMPOUND));
-            assertEquals(0L, wrappedChunk.getCompound("Level").getLong("InhabitedTime"));
+            assertTrue(NbtCompat.contains(wrappedChunk, "Level", Tag.TAG_COMPOUND));
+            assertEquals(0L, NbtCompat.getLong(NbtCompat.getCompound(wrappedChunk, "Level"), "InhabitedTime"));
         } finally {
             LinearRegionFile.ALL_OPEN.remove(region);
             region.releaseChunkData();

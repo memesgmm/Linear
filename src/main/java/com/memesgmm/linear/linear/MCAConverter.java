@@ -148,7 +148,7 @@ public final class MCAConverter {
         byte[][] chunkData  = new byte[1024][];
         int      chunkCount = 0;
 
-        try (RegionFile rf = new RegionFile(new net.minecraft.world.level.chunk.storage.RegionStorageInfo("dummy", net.minecraft.world.level.Level.OVERWORLD, "dummy"), mcaPath, dir, false)) {
+        try (RegionFile rf = com.memesgmm.linear.util.LinearCompat.createRegionFile(com.memesgmm.linear.util.LinearCompat.createDummyStorageInfo(), mcaPath, dir, false)) {
             for (int i = 0; i < 1024; i++) {
                 int lx = i % 32;
                 int lz = i / 32;
@@ -170,7 +170,7 @@ public final class MCAConverter {
             return;
         }
 
-        LinearRegionFile linear = new LinearRegionFile(linearPath, false, new net.minecraft.world.level.chunk.storage.RegionStorageInfo("dummy", net.minecraft.world.level.Level.OVERWORLD, "dummy"));
+        LinearRegionFile linear = new LinearRegionFile(linearPath, false, com.memesgmm.linear.util.LinearCompat.createDummyStorageInfo());
         boolean writeOk = false;
         try {
             for (int i = 0; i < 1024; i++) {

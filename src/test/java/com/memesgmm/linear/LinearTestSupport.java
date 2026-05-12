@@ -44,8 +44,8 @@ public final class LinearTestSupport {
         LinearRegionFile.shutdownBackupExecutor();
     }
 
-    public static net.minecraft.world.level.chunk.storage.RegionStorageInfo dummyStorageInfo() {
-        return new net.minecraft.world.level.chunk.storage.RegionStorageInfo("test", net.minecraft.world.level.Level.OVERWORLD, "region");
+    public static Object dummyStorageInfo() {
+        return com.memesgmm.linear.util.LinearCompat.createDummyStorageInfo();
     }
 
     public static Path copyCorpusTree(String relativePath, Path targetRoot) throws IOException {
@@ -67,7 +67,15 @@ public final class LinearTestSupport {
     public static Path resourcePath(String resourcePath) {
         URL url = LinearTestSupport.class.getClassLoader().getResource(resourcePath);
         if (url == null) {
-            throw new IllegalArgumentException("Missing test resource: " + resourcePath);
+            url = Thread.currentThread().getContextClassLoader().getResource(resourcePath);
+        }
+        if (url == null) {
+            // Fallback for environments where resources aren't correctly on the classpath
+            Path p = Path.of("src/test/resources").resolve(resourcePath);
+            if (Files.exists(p)) {
+                return p.toAbsolutePath();
+            }
+            throw new IllegalArgumentException("Missing test resource: " + resourcePath + " (also checked " + p.toAbsolutePath() + ")");
         }
         try {
             return Path.of(url.toURI());

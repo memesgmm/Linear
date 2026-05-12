@@ -102,7 +102,7 @@ class LinearRegionFileRecoveryTest {
         LinearRegionFile region = new LinearRegionFile(live, false, LinearTestSupport.dummyStorageInfo());
         try {
             try (DataOutputStream out = region.write(pos)) {
-                NbtIo.write(LinearTestData.simpleChunk("backup-create", pos.x, pos.z), out);
+                NbtIo.write(LinearTestData.simpleChunk("backup-create", com.memesgmm.linear.util.LinearCompat.getChunkX(pos), com.memesgmm.linear.util.LinearCompat.getChunkZ(pos)), out);
             }
 
             region.flush(true);

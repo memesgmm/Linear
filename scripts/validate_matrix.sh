@@ -8,15 +8,17 @@ set -e
 VERSIONS=(
     "1.21.1:21.1.228"
     "1.21.2:21.2.1-beta"
-    "1.21.3:21.3.56"
-    "1.21.4:21.4.1"
-    "1.21.5:21.5.1"
-    "1.21.6:21.6.1"
-    "1.21.7:21.7.1"
-    "1.21.8:21.8.1"
-    "1.21.9:21.9.1"
-    "1.21.10:21.10.1"
-    "1.21.11:21.11.1"
+    "1.21.3:21.3.96"
+    "1.21.4:21.4.157"
+    "1.21.5:21.5.97"
+    "1.21.6:21.6.1-beta"
+    "1.21.7:21.7.1-beta"
+    "1.21.8:21.8.53"
+    "1.21.9:21.9.1-beta"
+    "1.21.10:21.10.64"
+    "1.21.11:21.11.42"
+    "1.21.4:26.1.1.15-beta"
+    "1.21.4:26.1.2.48-beta"
 )
 
 REPORT="matrix_report.md"
@@ -32,8 +34,11 @@ for ENTRY in "${VERSIONS[@]}"; do
     echo "VALIDATING: Minecraft $MC_VER (NeoForge $NEO_VER)"
     echo "----------------------------------------------------"
     
-    # Run clean and test with property overrides
-    if ./gradlew clean test \
+    # Run classes first (warm-up) then test
+    if ./gradlew classes \
+        -PmcVersionOverride="$MC_VER" \
+        -PneoVersionOverride="$NEO_VER" --no-daemon && \
+       ./gradlew test \
         -PmcVersionOverride="$MC_VER" \
         -PneoVersionOverride="$NEO_VER" --no-daemon; then
         echo "| $MC_VER | $NEO_VER | ✅ PASS | Compiled and tested successfully |" >> $REPORT

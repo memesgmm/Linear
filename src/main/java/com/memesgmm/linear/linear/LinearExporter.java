@@ -162,11 +162,11 @@ public final class LinearExporter {
         // Open the .linear file for reading. Constructor adds to ALL_OPEN;
         // we remove it in the finally block — this is a read-only export instance,
         // not a live cache entry, and we never call flush() on it.
-        LinearRegionFile linear = new LinearRegionFile(linearPath, false, new net.minecraft.world.level.chunk.storage.RegionStorageInfo("dummy", net.minecraft.world.level.Level.OVERWORLD, "dummy"));
+        LinearRegionFile linear = new LinearRegionFile(linearPath, false, com.memesgmm.linear.util.LinearCompat.createDummyStorageInfo());
         try {
             // RegionFile(path, externalFileDir, dsync)
             // dsync=false — we're writing an export copy, not a live save.
-            try (RegionFile mca = new RegionFile(new net.minecraft.world.level.chunk.storage.RegionStorageInfo("dummy", net.minecraft.world.level.Level.OVERWORLD, "dummy"), mcaDest, mcaFolder, false)) {
+            try (RegionFile mca = com.memesgmm.linear.util.LinearCompat.createRegionFile(com.memesgmm.linear.util.LinearCompat.createDummyStorageInfo(), mcaDest, mcaFolder, false)) {
                 for (int i = 0; i < 1024; i++) {
                     int lx = i % 32;
                     int lz = i / 32;

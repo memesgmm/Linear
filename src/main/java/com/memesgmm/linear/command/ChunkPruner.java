@@ -3,6 +3,7 @@ package com.memesgmm.linear.command;
 import com.memesgmm.linear.LinearRuntime;
 import com.memesgmm.linear.config.LinearConfig;
 import com.memesgmm.linear.linear.LinearRegionFile;
+import com.memesgmm.linear.util.NbtCompat;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -303,7 +304,7 @@ public final class ChunkPruner {
         List<ChunkPos> sampleCandidates = new ArrayList<>();
         int presentChunkCount = 0;
         boolean ownsRegion = openRegion == null;
-        LinearRegionFile region = ownsRegion ? new LinearRegionFile(regionPath, false, new net.minecraft.world.level.chunk.storage.RegionStorageInfo("dummy", net.minecraft.world.level.Level.OVERWORLD, "dummy")) : openRegion;
+        LinearRegionFile region = ownsRegion ? new LinearRegionFile(regionPath, false, com.memesgmm.linear.util.LinearCompat.createDummyStorageInfo()) : openRegion;
 
         try {
             for (int localIndex = 0; localIndex < 1024; localIndex++) {
@@ -412,7 +413,7 @@ public final class ChunkPruner {
     private static int pruneRegion(RegionPlan plan, long scannedAtNs) throws IOException {
         LinearRegionFile openRegion = findOpenRegion(plan.normalizedPath());
         boolean ownsRegion = openRegion == null;
-        LinearRegionFile region = ownsRegion ? new LinearRegionFile(plan.path(), false, new net.minecraft.world.level.chunk.storage.RegionStorageInfo("dummy", net.minecraft.world.level.Level.OVERWORLD, "dummy")) : openRegion;
+        LinearRegionFile region = ownsRegion ? new LinearRegionFile(plan.path(), false, com.memesgmm.linear.util.LinearCompat.createDummyStorageInfo()) : openRegion;
 
         try {
             if (!ownsRegion) {
@@ -467,12 +468,12 @@ public final class ChunkPruner {
     }
 
     static boolean isPrunableChunk(CompoundTag rawTag) {
-        CompoundTag tag = rawTag.contains("Level", Tag.TAG_COMPOUND)
-                ? rawTag.getCompound("Level")
+        CompoundTag tag = NbtCompat.contains(rawTag, "Level", Tag.TAG_COMPOUND)
+                ? NbtCompat.getCompound(rawTag, "Level")
                 : rawTag;
 
-        if (!tag.contains("InhabitedTime", Tag.TAG_ANY_NUMERIC)) return false;
-        if (tag.getLong("InhabitedTime") != 0L) return false;
+        if (!NbtCompat.contains(tag, "InhabitedTime", NbtCompat.TAG_ANY_NUMERIC)) return false;
+        if (NbtCompat.getLong(tag, "InhabitedTime") != 0L) return false;
         if (hasNonEmptyList(tag, "block_entities") || hasNonEmptyList(tag, "TileEntities")) return false;
         if (hasNonEmptyList(tag, "entities") || hasNonEmptyList(tag, "Entities")) return false;
         if (hasStructureData(tag, "structures", "starts", "References")) return false;
@@ -485,14 +486,14 @@ public final class ChunkPruner {
     }
 
     private static boolean hasNonEmptyList(CompoundTag tag, String key) {
-        if (!tag.contains(key, Tag.TAG_LIST)) return false;
-        ListTag list = tag.getList(key, Tag.TAG_END);
+        if (!NbtCompat.contains(tag, key, Tag.TAG_LIST)) return false;
+        ListTag list = NbtCompat.getList(tag, key, Tag.TAG_COMPOUND);
         return !list.isEmpty();
     }
 
     private static boolean hasNonEmptyNestedListList(CompoundTag tag, String key) {
-        if (!tag.contains(key, Tag.TAG_LIST)) return false;
-        ListTag outer = tag.getList(key, Tag.TAG_LIST);
+        if (!NbtCompat.contains(tag, key, Tag.TAG_LIST)) return false;
+        ListTag outer = NbtCompat.getList(tag, key, Tag.TAG_LIST);
         for (int i = 0; i < outer.size(); i++) {
             Tag entry = outer.get(i);
             if (entry instanceof ListTag list && !list.isEmpty()) {
@@ -503,22 +504,22 @@ public final class ChunkPruner {
     }
 
     private static boolean hasNonEmptyCompound(CompoundTag tag, String key) {
-        return tag.contains(key, Tag.TAG_COMPOUND) && !tag.getCompound(key).isEmpty();
+        return NbtCompat.contains(tag, key, Tag.TAG_COMPOUND) && !NbtCompat.getCompound(tag, key).isEmpty();
     }
 
     private static boolean hasStructureData(CompoundTag tag, String structuresKey, String startsKey, String referencesKey) {
-        if (!tag.contains(structuresKey, Tag.TAG_COMPOUND)) return false;
-        CompoundTag structures = tag.getCompound(structuresKey);
+        if (!NbtCompat.contains(tag, structuresKey, Tag.TAG_COMPOUND)) return false;
+        CompoundTag structures = NbtCompat.getCompound(tag, structuresKey);
 
-        if (structures.contains(startsKey, Tag.TAG_COMPOUND) && !structures.getCompound(startsKey).isEmpty()) {
+        if (NbtCompat.contains(structures, startsKey, Tag.TAG_COMPOUND) && !NbtCompat.getCompound(structures, startsKey).isEmpty()) {
             return true;
         }
 
-        if (!structures.contains(referencesKey, Tag.TAG_COMPOUND)) return false;
-        CompoundTag references = structures.getCompound(referencesKey);
-        Set<String> keys = references.getAllKeys();
+        if (!NbtCompat.contains(structures, referencesKey, Tag.TAG_COMPOUND)) return false;
+        CompoundTag references = NbtCompat.getCompound(structures, referencesKey);
+        Set<String> keys = NbtCompat.getAllKeys(references);
         for (String key : keys) {
-            if (references.contains(key, Tag.TAG_LONG_ARRAY)) {
+            if (NbtCompat.contains(references, key, Tag.TAG_LONG_ARRAY)) {
                 LongArrayTag arr = (LongArrayTag) references.get(key);
                 if (arr != null && arr.size() > 0) return true;
             } else {
@@ -584,17 +585,18 @@ public final class ChunkPruner {
     private static PlayerContext playerContextFor(CommandSourceStack source, Path worldRoot) {
         if (source.getEntity() == null) return null;
 
-        ChunkPos chunkPos = new ChunkPos(net.minecraft.core.BlockPos.containing(source.getPosition()));
+        net.minecraft.core.BlockPos _bp = net.minecraft.core.BlockPos.containing(source.getPosition());
+        ChunkPos chunkPos = new ChunkPos(_bp.getX() >> 4, _bp.getZ() >> 4);
         Path regionFolder = LinearRuntime.regionFolderForDimension(source.getLevel().dimension());
         String regionDirLabel = regionFolder != null && regionFolder.startsWith(worldRoot)
                 ? worldRoot.relativize(regionFolder).toString().replace('\\', '/')
                 : "region";
         return new PlayerContext(
                 regionDirLabel,
-                chunkPos.x,
-                chunkPos.z,
-                chunkPos.x >> 5,
-                chunkPos.z >> 5
+                com.memesgmm.linear.util.LinearCompat.getChunkX(chunkPos),
+                com.memesgmm.linear.util.LinearCompat.getChunkZ(chunkPos),
+                com.memesgmm.linear.util.LinearCompat.getChunkX(chunkPos) >> 5,
+                com.memesgmm.linear.util.LinearCompat.getChunkZ(chunkPos) >> 5
         );
     }
 
@@ -693,12 +695,12 @@ public final class ChunkPruner {
     }
 
     private static String formatSampleChunk(SampleChunk sample, String reason) {
-        return sample.plan().regionLabel() + " @ chunk " + sample.chunkPos().x + ", " + sample.chunkPos().z
+        return sample.plan().regionLabel() + " @ chunk " + com.memesgmm.linear.util.LinearCompat.getChunkX(sample.chunkPos()) + ", " + com.memesgmm.linear.util.LinearCompat.getChunkZ(sample.chunkPos())
                 + " §8(" + reason + ")";
     }
 
     private static String sampleKey(SampleChunk sample) {
-        return sample.plan().regionLabel() + "|" + sample.chunkPos().x + "|" + sample.chunkPos().z;
+        return sample.plan().regionLabel() + "|" + com.memesgmm.linear.util.LinearCompat.getChunkX(sample.chunkPos()) + "|" + com.memesgmm.linear.util.LinearCompat.getChunkZ(sample.chunkPos());
     }
 
     private static String describeRegionDistance(RegionPlan plan, PlayerContext playerContext) {
@@ -721,8 +723,8 @@ public final class ChunkPruner {
     }
 
     private static long chunkDistanceSq(ChunkPos chunkPos, PlayerContext playerContext) {
-        long dx = (long) chunkPos.x - playerContext.chunkX();
-        long dz = (long) chunkPos.z - playerContext.chunkZ();
+        long dx = (long) com.memesgmm.linear.util.LinearCompat.getChunkX(chunkPos) - playerContext.chunkX();
+        long dz = (long) com.memesgmm.linear.util.LinearCompat.getChunkZ(chunkPos) - playerContext.chunkZ();
         return dx * dx + dz * dz;
     }
 

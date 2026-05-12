@@ -70,7 +70,7 @@ public abstract class RegionFileStorageMixin {
     private synchronized LinearRegionFile linearGetOrCreate(ChunkPos pos, boolean existingOnly) throws IOException {
         if (folder == null) return null;
 
-        long key = ChunkPos.asLong(pos.getRegionX(), pos.getRegionZ());
+        long key = com.memesgmm.linear.util.LinearCompat.chunkPosAsLong(pos.getRegionX(), pos.getRegionZ());
 
         LinearRegionFile cached = linearCache.getAndMoveToFirst(key);
         if (cached != null) {
@@ -170,7 +170,7 @@ public abstract class RegionFileStorageMixin {
      */
     @Overwrite
     private synchronized RegionFile getRegionFile(ChunkPos pos) throws IOException {
-        long key = ChunkPos.asLong(pos.getRegionX(), pos.getRegionZ());
+        long key = com.memesgmm.linear.util.LinearCompat.chunkPosAsLong(pos.getRegionX(), pos.getRegionZ());
 
         RegionFile cached = regionCache.getAndMoveToFirst(key);
         if (cached != null) {

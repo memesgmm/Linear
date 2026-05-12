@@ -90,7 +90,7 @@ public class LinearRegionFile implements AutoCloseable {
     private final Path    path;
     private final Path    normalizedPath;
     private final boolean dsync;
-    private final net.minecraft.world.level.chunk.storage.RegionStorageInfo storageInfo;
+    private final Object storageInfo;
 
     public final int regionX;
     public final int regionZ;
@@ -136,7 +136,7 @@ public class LinearRegionFile implements AutoCloseable {
     @Nullable
     private byte[] loadedBody;
 
-    public LinearRegionFile(Path path, boolean dsync, net.minecraft.world.level.chunk.storage.RegionStorageInfo storageInfo) throws IOException {
+    public LinearRegionFile(Path path, boolean dsync, Object storageInfo) throws IOException {
         this.path  = path;
         this.normalizedPath = path.toAbsolutePath().normalize();
         this.dsync = dsync;
@@ -204,7 +204,7 @@ public class LinearRegionFile implements AutoCloseable {
     // -------------------------------------------------------------------------
 
     private static int indexOf(ChunkPos pos) {
-        return (pos.x & 31) + (pos.z & 31) * REGION_DIM;
+        return (com.memesgmm.linear.util.LinearCompat.getChunkX(pos) & 31) + (com.memesgmm.linear.util.LinearCompat.getChunkZ(pos) & 31) * REGION_DIM;
     }
 
     private static long computeResidentBudgetBytes() {
@@ -775,7 +775,7 @@ public class LinearRegionFile implements AutoCloseable {
     public boolean isDirty()           { return dirty; }
     public boolean isFlushing()        { return flushing; }
 
-    public net.minecraft.world.level.chunk.storage.RegionStorageInfo getStorageInfo() {
+    public Object getStorageInfo() {
         return storageInfo;
     }
 

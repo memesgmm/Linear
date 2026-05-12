@@ -6,6 +6,7 @@ import com.memesgmm.linear.config.LinearConfig;
 import com.memesgmm.linear.linear.IdleRecompressor;
 import com.memesgmm.linear.linear.LinearExporter;
 import com.memesgmm.linear.linear.LinearRegionFile;
+import com.memesgmm.linear.util.CommandCompat;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -31,7 +32,7 @@ public final class LinearCommandRegistrar {
 
         dispatcher.register(
                 Commands.literal("linear")
-                        .requires(src -> src.hasPermission(2))
+                        .requires(src -> CommandCompat.hasPermission(src, 2))
                         .then(Commands.literal("cache_info")
                                 .executes(LinearCommandRegistrar::executeInfo))
                         .then(Commands.literal("storage")
