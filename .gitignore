@@ -1,0 +1,30 @@
+# Gradle build outputs
+build/
+.gradle/
+
+# IDE files
+.idea/
+.eclipse/
+.vscode/
+*.iml
+bin/
+
+# NeoForge run directories
+run/
+
+# Logs
+logs/
+
+# Compiled class files
+*.class
+
+# Generated corpus / benchmark scratch data
+src/test/resources/corpus/
+
+# Scratch files
+src/test/java/com/bugfunbug/linearreader/scratch/
+
+# OS junk
+.DS_Store
+Thumbs.db
+LinearReader-old/

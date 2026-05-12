@@ -1,0 +1,114 @@
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.75'
+}
+
+version = mod_version
+group = mod_group_id
+
+repositories {
+    mavenCentral()
+}
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+configurations {
+    zstdRuntime
+}
+
+dependencies {
+    testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
+    testRuntimeOnly 'com.github.luben:zstd-jni:1.5.5-11'
+    zstdRuntime 'com.github.luben:zstd-jni:1.5.5-11'
+}
+
+neoForge {
+    version = neo_version
+
+    runs {
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'debug'
+            systemProperty 'mixin.debug.export', 'true'
+            systemProperty 'mixin.debug.verbose', 'true'
+        }
+        client {
+            client()
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+
+    unitTest {
+        enable()
+        testedMod = mods."${mod_id}"
+    }
+}
+
+tasks.named('processTestResources', ProcessResources).configure {
+    from(configurations.zstdRuntime) {
+        into 'META-INF/linearreader-libs'
+        rename { 'zstd-jni.jar' }
+    }
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+}
+
+task generateCorpus(type: JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.bugfunbug.linearreader.linear.LinearCorpusGenerator'
+    args = ["${projectDir}/src/test/resources/corpus"]
+}
+task benchmark(type: JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.bugfunbug.linearreader.benchmark.LinearBenchmark'
+    standardInput = System.in
+}
+
+jar {
+    from(configurations.zstdRuntime) {
+        into 'META-INF/linearreader-libs'
+        rename { 'zstd-jni.jar' }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType(ProcessResources).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(configurations.zstdRuntime) {
+        into 'META-INF/linearreader-libs'
+        rename { 'zstd-jni.jar' }
+    }
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            neo_version            : neo_version,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}
