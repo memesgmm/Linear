@@ -27,9 +27,6 @@ Linear provides two distinct builds to cover different NeoForge lifecycles:
 Linear is designed for efficiency at scale. Below are the results from a controlled A/B test comparing a vanilla Anvil (`.mca`) world against the same world stored in `.linear`.
 
 ### 📊 Real-World Results
-**Test Case:** 2000-block radius pregeneration (Chunky)
-- **Seed:** `9131502383106133584` (Default Settings)
-- **Compatibility:** 1.21.x (Legacy) and 26.x (Modern)
 
 ![Linear Benchmark Graph](https://raw.githubusercontent.com/memesgmm/Linear/main/assets/benchmark_graph.svg)
 
