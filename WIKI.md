@@ -17,9 +17,12 @@ This document contains detailed information on installation, configuration, and 
 
 ## Installation
 
-1. Download the latest `linear-X.Y.Z.jar` from [Releases](https://github.com/memesgmm/Linear/releases).
-2. Place it in your NeoForge `mods/` folder.
-3. Start your server or client.
+1. Download the correct JAR for your NeoForge version from [Releases](https://github.com/memesgmm/Linear/releases):
+    *   **1.21.1 – 1.21.11**: Use `Linear-1.21.x-1.1.0.jar` (**Requires Java 21**).
+    *   **26.1.x+**: Use `Linear-26.x-1.1.0.jar` (**Requires Java 25**).
+2. Place the JAR in your NeoForge `mods/` folder.
+3. Ensure your Java runtime matches the requirement (Java 25 for NeoForge 26+).
+4. Start your server or client.
 
 On first launch, Linear will automatically convert any existing `.mca` world data to `.linear` format before the world loads. The original `.mca` files are deleted after a successful conversion.
 
@@ -81,6 +84,8 @@ Configuration is stored in `config/linear-server.toml`:
 
 | Mod | Status | Notes |
 | :--- | :---: | :--- |
+| **NeoForge 1.21.x** | ✅ | Stable lifecycle (Java 21) |
+| **NeoForge 26.x+** | ✅ | Modern lifecycle (Java 25) |
 | **C2ME** | ✅ | Full async write/clear path intercepted |
 | **Distant Horizons** | ✅ | Pregen monitor pauses eviction during heavy pregen |
 | **Sable / Sublevels** | ✅ | Automatic conversion for each sub-level |
@@ -102,17 +107,20 @@ Requires operator permission level 4.
 
 ## Building from Source
 
-**Requirements:** JDK 21, Gradle 8.8+
+**Requirements:** JDK 21 (for Legacy) or JDK 25 (for Modern), Gradle 8.10+
 
 ```bash
 git clone https://github.com/memesgmm/Linear.git
 cd Linear
 
-# Build the mod JAR
-./gradlew build
+# Build for Legacy (1.21.x / Java 21)
+./gradlew jar -PbuildTarget=legacy
 
-# Run unit tests
-./gradlew test
+# Build for Modern (26.x / Java 25)
+./gradlew jar -PbuildTarget=modern
+
+# Build both and copy to build/libs/
+./scripts/build_all.sh
 ```
 
 ---
