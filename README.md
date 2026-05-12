@@ -22,7 +22,7 @@ In real-world testing (Seed: `9131502383106133584`), Linear reduced the total wo
 
 > [!CAUTION]
 > **This mod is in early development.** While it has been tested, it modifies core world storage logic. 
-> **Always keep backups of your world.** The conversion from Anvil to Linear is automatic, but reversing it requires manual export.
+> **Always keep backups of your world.** The conversion from Anvil to Linear is automatic, but reversing it requires keeping a backup of your old world files.
 
 ---
 
