@@ -20,19 +20,18 @@ if [[ -z "$MCA_JSON" || -z "$LINEAR_JSON" ]]; then
     exit 1
 fi
 
-if ! command -v jq &>/dev/null; then
-    echo "ERROR: jq is required. Install with: sudo apt install jq"
-    exit 1
-fi
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
-jq_str()  { jq -r "${2}" "${1}" 2>/dev/null || echo "n/a"; }
-jq_num()  { jq -r "${2} // \"n/a\"" "${1}" 2>/dev/null; }
+get_json_val() {
+    python3 -c "import sys, json; obj=json.load(open(sys.argv[1])); val=obj; [val:=val.get(k, 'n/a') if isinstance(val, dict) else 'n/a' for k in sys.argv[2].strip('.').split('.')]; print(val if val is not None else 'n/a')" "$1" "$2" 2>/dev/null || echo "n/a"
+}
+
+jq_str()  { get_json_val "$1" "$2"; }
+jq_num()  { get_json_val "$1" "$2"; }
 
 fmt_mb()  {
     local bytes="$1"
     if [[ "$bytes" == "null" || "$bytes" == "n/a" ]]; then echo "n/a"; return; fi
-    echo "scale=2; $bytes / 1048576" | bc
+    awk -v b="$bytes" 'BEGIN { printf "%.2f", b / 1048576 }'
 }
 
 pct_savings() {
@@ -41,7 +40,7 @@ pct_savings() {
         echo "n/a"
         return
     fi
-    echo "scale=1; (1 - ($lin / $mca)) * 100" | bc
+    awk -v m="$mca" -v l="$lin" 'BEGIN { printf "%.1f", (1 - (l / m)) * 100 }'
 }
 
 speedup() {
@@ -50,7 +49,7 @@ speedup() {
         echo "n/a"
         return
     fi
-    echo "scale=1; $mca_s / $lin_s" | bc
+    awk -v m="$mca_s" -v l="$lin_s" 'BEGIN { printf "%.1f", m / l }'
 }
 
 # ── Read values ───────────────────────────────────────────────────────────────
@@ -94,7 +93,7 @@ BOLD=$'\e[1m'; RESET=$'\e[0m'; GREEN=$'\e[32m'; CYAN=$'\e[36m'
 
 echo ""
 echo "${BOLD}╔══════════════════════════════════════════════════════════════╗${RESET}"
-echo "${BOLD}║         LinearReader — Pregen Benchmark Comparison           ║${RESET}"
+echo "${BOLD}║            Linear — Pregen Benchmark Comparison              ║${RESET}"
 echo "${BOLD}╚══════════════════════════════════════════════════════════════╝${RESET}"
 echo ""
 printf "  %-30s %-20s %-20s\n" "Metric" "MCA (baseline)" "Linear"

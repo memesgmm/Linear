@@ -46,7 +46,7 @@ echo "[mca-baseline] Will auto-stop on Chunky 'Generation complete' line."
 scan_mca() {
     local folder="$1"
     find "$folder" -name "*.mca" -type f 2>/dev/null \
-        | awk 'BEGIN{c=0;t=0} {c++; cmd="stat -c%s " $0; cmd | getline s; close(cmd); t+=s} END{print c " " t}'
+        | awk 'BEGIN{c=0;t=0} {c++; cmd="stat -c%s -- \"" $0 "\""; cmd | getline s; close(cmd); t+=s} END{print c " " t}'
 }
 
 # ── Wait for Chunky completion ────────────────────────────────────────────────
@@ -59,12 +59,13 @@ cleanup_and_report() {
     local end_epoch
     end_epoch=$(date +%s)
     local duration=$(( end_epoch - START_EPOCH ))
+    if [ $duration -eq 0 ]; then duration=1; fi
 
     # Scan all dimension folders for .mca files
     read -r mca_count mca_bytes <<< "$(scan_mca "$WORLD_FOLDER")"
 
     local mca_mb
-    mca_mb=$(echo "scale=2; ${mca_bytes:-0} / 1048576" | bc)
+    mca_mb=$(awk -v b="${mca_bytes:-0}" 'BEGIN { printf "%.2f", b / 1048576 }')
 
     echo ""
     echo "[mca-baseline] Pregen complete."

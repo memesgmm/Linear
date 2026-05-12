@@ -3,7 +3,7 @@ loaderVersion="[3,]"
 license="${mod_license}"
 
 [[mixins]]
-    config = "linearreader.mixins.json"
+    config = "linear.mixins.json"
 
 [[mods]]
 modId="${mod_id}"

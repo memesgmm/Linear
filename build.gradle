@@ -62,7 +62,7 @@ neoForge {
 
 tasks.named('processTestResources', ProcessResources).configure {
     from(configurations.zstdRuntime) {
-        into 'META-INF/linearreader-libs'
+        into 'META-INF/linear-libs'
         rename { 'zstd-jni.jar' }
     }
 }
@@ -73,18 +73,18 @@ tasks.named('test', Test).configure {
 
 task generateCorpus(type: JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
-    mainClass = 'com.bugfunbug.linearreader.linear.LinearCorpusGenerator'
+    mainClass = 'com.memesgmm.linear.linear.LinearCorpusGenerator'
     args = ["${projectDir}/src/test/resources/corpus"]
 }
 task benchmark(type: JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
-    mainClass = 'com.bugfunbug.linearreader.benchmark.LinearBenchmark'
+    mainClass = 'com.memesgmm.linear.benchmark.LinearBenchmark'
     standardInput = System.in
 }
 
 jar {
     from(configurations.zstdRuntime) {
-        into 'META-INF/linearreader-libs'
+        into 'META-INF/linear-libs'
         rename { 'zstd-jni.jar' }
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -93,7 +93,7 @@ jar {
 tasks.withType(ProcessResources).configureEach {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(configurations.zstdRuntime) {
-        into 'META-INF/linearreader-libs'
+        into 'META-INF/linear-libs'
         rename { 'zstd-jni.jar' }
     }
     var replaceProperties = [

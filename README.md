@@ -1,8 +1,8 @@
 <img src="https://img.shields.io/badge/NeoForge-1.21.1-orange?style=flat-square" alt="NeoForge 1.21.1" /> <img src="https://img.shields.io/badge/Java-21-blue?style=flat-square" alt="Java 21" /> <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" /> <img src="https://img.shields.io/badge/Zstd-1.5.5--11-purple?style=flat-square" alt="Zstd" />
 
-# LinearReader
+# Linear
 
-**LinearReader** is a high-performance NeoForge 1.21.1 mod that replaces Minecraft's standard Anvil (`.mca`) region file format with the compressed [`.linear` format](https://github.com/xymb-endcrystalme/LinearRegionFileFormatTools), delivering dramatic reductions in world save size and save latency.
+**Linear** is a high-performance NeoForge 1.21.1 mod that replaces Minecraft's standard Anvil (`.mca`) region file format with the compressed [`.linear` format](https://github.com/xymb-endcrystalme/LinearRegionFileFormatTools), delivering dramatic reductions in world save size and save latency.
 
 > **Tested benchmark results** on real-world region data:
 > - 🗜️ **70–80% smaller** world saves (Zstd compression vs. Anvil's zlib)
@@ -37,22 +37,22 @@
 - **Memory budget management** — LRU resident-data cache with configurable heap limits prevents excessive RAM usage on large servers.
 - **Backup support** — automatic `.bak` rotation keeps a previous copy of each region on disk.
 - **Idle recompression** — when the server is quiet, lightly-populated regions are recompressed to reclaim disk space.
-- **Chunk pruning command** — `/linearreader prune-chunks` safely removes never-visited chunks (empty, InhabitedTime=0) to further shrink saves.
+- **Chunk pruning command** — `/linear prune-chunks` safely removes never-visited chunks (empty, InhabitedTime=0) to further shrink saves.
 - **C2ME compatible** — intercepts C2ME's direct `RegionFile` write/clear paths via targeted Mixins.
 
 ---
 
 ## Installation
 
-1. Download the latest `linearreader-X.Y.Z.jar` from [Releases](https://github.com/memesgmm/LinearReader/releases).
+1. Download the latest `linear-X.Y.Z.jar` from [Releases](https://github.com/memesgmm/Linear/releases).
 2. Place it in your NeoForge `mods/` folder.
 3. Start your server or client. **That's it.**
 
-On first launch, LinearReader will automatically convert any existing `.mca` world data to `.linear` format before the world loads. The original `.mca` files are deleted after a successful conversion.
+On first launch, Linear will automatically convert any existing `.mca` world data to `.linear` format before the world loads. The original `.mca` files are deleted after a successful conversion.
 
 > [!WARNING]
 > **Back up your world before installing for the first time.** The conversion is irreversible without a backup.
-> LinearReader will refuse to delete `.mca` files if the conversion fails, allowing you to retry safely.
+> Linear will refuse to delete `.mca` files if the conversion fails, allowing you to retry safely.
 
 ---
 
@@ -97,7 +97,7 @@ RegionFileStorage
 
 ## Automatic World Conversion
 
-LinearReader converts `.mca` files automatically when a world dimension is first opened. This is triggered from inside the `RegionFileStorage` constructor — the only safe point to run conversion before any chunk I/O begins.
+Linear converts `.mca` files automatically when a world dimension is first opened. This is triggered from inside the `RegionFileStorage` constructor — the only safe point to run conversion before any chunk I/O begins.
 
 - Conversion uses up to **4 parallel threads** (configurable via CPU core count).
 - Each `.mca` file is read with vanilla `RegionFile` (supporting all compression types, including external `.mcc` files), and the chunk data is written verbatim to a new `LinearRegionFile`.
@@ -108,7 +108,7 @@ LinearReader converts `.mca` files automatically when a world dimension is first
 
 ## Configuration
 
-Configuration is stored in `config/linearreader.toml` (auto-generated on first run):
+Configuration is stored in `config/linear.toml` (auto-generated on first run):
 
 ```toml
 [storage]
@@ -141,17 +141,24 @@ confirmWindowSeconds = 30
 | **Sable / Sublevels** | ✅ | Each sub-level gets its own `RegionFileStorage` → automatic Linear conversion |
 | **Create** | ✅ | No special handling needed |
 
-LinearReader does **not** alter the NBT data inside chunks — it only changes how chunks are stored on disk. Any mod that reads vanilla NBT will work without modification.
+Linear does **not** alter the NBT data inside chunks — it only changes how chunks are stored on disk. Any mod that reads vanilla NBT will work without modification.
 
 ### C2ME Integration Detail
 
-C2ME bypasses `getChunkDataOutputStream` and calls `RegionFile.write(ChunkPos, ByteBuffer)` directly (via its `IRegionFile.invokeWriteChunk` accessor mixin). `RegionFileMixin` in LinearReader intercepts this call on `LinearBackedRegionFile` instances, strips the 5-byte MC chunk header, decompresses the payload, and writes raw NBT to `LinearRegionFile` — matching the vanilla write path exactly.
+C2ME bypasses `getChunkDataOutputStream` and calls `RegionFile.write(ChunkPos, ByteBuffer)` directly (via its `IRegionFile.invokeWriteChunk` accessor mixin). `RegionFileMixin` in Linear intercepts this call on `LinearBackedRegionFile` instances, strips the 5-byte MC chunk header, decompresses the payload, and writes raw NBT to `LinearRegionFile` — matching the vanilla write path exactly.
 
 ---
 
 ## Performance Benchmarks
 
-All measurements taken on real-world region files from an active Create modpack server (overworld only, 4 regions).
+![Linear Benchmark Graph](assets/benchmark_graph.png)
+
+### Test Environment
+- **Seed**: `9131502383106133584`
+- **Settings**: Default world generation
+- **Instance**: NeoForge 1.21.1 with standard performance mods
+
+### Comparison Summary
 
 | Region | MCA Size | Linear Size | Savings | MCA Save | Linear Save | Speedup |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -160,7 +167,10 @@ All measurements taken on real-world region files from an active Create modpack 
 | r.0.-1 | 836 KB | 152 KB | **82%** | 3,281 ms | 12 ms | **273x** |
 | r.-1.0 | 1,236 KB | 359 KB | **71%** | 4,409 ms | 34 ms | **130x** |
 
-> Save times include a full compress + atomic file rename. MCA save times reflect vanilla zlib compression followed by a synchronous file write.
+---
+
+> [!NOTE]
+> **Overall Benchmarks:** In a full world pregeneration test, Linear reduced the total world save size from **193 MB** to **66 MB** (**66% total saving**), including all entities and metadata.
 
 ---
 
@@ -168,21 +178,21 @@ All measurements taken on real-world region files from an active Create modpack 
 
 All commands require operator permission level 4.
 
-### `/linearreader stats`
+### `/linear stats`
 Displays live I/O statistics: cache hit/miss rates, chunk read/write counts and percentile latencies, flush counts, and current resident memory usage.
 
-### `/linearreader prune-chunks`
+### `/linear prune-chunks`
 Performs a **dry-run** analysis that identifies chunks safe to delete (never visited by players, `InhabitedTime = 0`, no entities, no block entities, no structure references). Prints a summary to chat.
 
 ```
-/linearreader prune-chunks          # dry run
-/linearreader prune-chunks confirm  # apply after reviewing the report
+/linear prune-chunks          # dry run
+/linear prune-chunks confirm  # apply after reviewing the report
 ```
 
 > [!CAUTION]
 > `prune-chunks confirm` permanently deletes matching chunks from `.linear` region files. Run it while the server is quiet and keep backups.
 
-### `/linearreader sync-backups`
+### `/linear sync-backups`
 Forces an immediate backup refresh of all loaded regions, updating `.bak` files to match the current state of the world.
 
 ---
@@ -192,10 +202,10 @@ Forces an immediate backup refresh of all loaded regions, updating `.bak` files 
 **Requirements:** JDK 21, Gradle 8.8+
 
 ```bash
-git clone https://github.com/memesgmm/LinearReader.git
-cd LinearReader
+git clone https://github.com/memesgmm/Linear.git
+cd Linear
 
-# Build the mod JAR (output: build/libs/linearreader-*.jar)
+# Build the mod JAR (output: build/libs/linear-*.jar)
 ./gradlew build
 
 # Run unit tests
@@ -210,8 +220,8 @@ cd LinearReader
 
 ```
 src/
-├── main/java/com/bugfunbug/linearreader/
-│   ├── LinearReader.java          # Mod entry point
+├── main/java/com/memesgmm/linear/
+│   ├── Linear.java          # Mod entry point
 │   ├── LinearRuntime.java         # Background flush executor, stats, lifecycle
 │   ├── LinearStats.java           # Thread-safe I/O telemetry
 │   ├── command/                   # In-game commands (stats, prune-chunks, sync-backups)
@@ -227,7 +237,7 @@ src/
 │   └── mixin/
 │       ├── RegionFileStorageMixin.java # Overwrites all chunk storage entry points
 │       └── RegionFileMixin.java        # Intercepts C2ME's direct RegionFile paths
-└── test/java/com/bugfunbug/linearreader/
+└── test/java/com/memesgmm/linear/
     ├── benchmark/LinearBenchmark.java  # A/B performance benchmark tool
     └── linear/                         # Unit & integration tests
 ```
@@ -247,7 +257,12 @@ Pull requests are welcome! Please:
 
 ## License
 
-LinearReader is released under the **MIT License**. See [LICENSE](LICENSE) for the full text.
+Linear is released under the **MIT License**. See [LICENSE](LICENSE) for the full text.
 
 The bundled [zstd-jni](https://github.com/luben/zstd-jni) library is released under the BSD 2-Clause License.
 The `.linear` file format was designed by [xymb-endcrystalme](https://github.com/xymb-endcrystalme/LinearRegionFileFormatTools).
+
+---
+
+### Credits
+- Based on the original [LinearReader](https://github.com/Bugfunbug/LinearReader) mod by **Bugfunbug**.

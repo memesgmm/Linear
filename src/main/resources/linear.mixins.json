@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.memesgmm.linear.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "linear.refmap.json",
+  "mixins": [
+    "RegionFileStorageMixin",
+    "RegionFileMixin"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

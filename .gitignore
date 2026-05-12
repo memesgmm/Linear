@@ -22,7 +22,7 @@ logs/
 src/test/resources/corpus/
 
 # Scratch files
-src/test/java/com/bugfunbug/linearreader/scratch/
+src/test/java/com/memesgmm/linear/scratch/
 
 # OS junk
 .DS_Store
