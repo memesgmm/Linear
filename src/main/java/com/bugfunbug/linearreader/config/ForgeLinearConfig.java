@@ -31,6 +31,8 @@ public final class ForgeLinearConfig {
     private static final ModConfigSpec.BooleanValue AUTO_RECOMPRESS_ENABLED;
     private static final ModConfigSpec.IntValue     IDLE_THRESHOLD_MINUTES;
     private static final ModConfigSpec.IntValue     RECOMPRESS_MIN_FREE_RAM_PERCENT;
+    /** Benchmark/pregen feature flag — disabled by default. */
+    private static final ModConfigSpec.BooleanValue PREGEN_EXPORT_ENABLED;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -167,6 +169,16 @@ public final class ForgeLinearConfig {
                 )
                 .defineInRange("recompressMinFreeRamPercent", 15, 5, 50);
 
+        PREGEN_EXPORT_ENABLED = builder
+                .comment(
+                        "[Benchmark] When true, writes a linear-pregen-stats-<timestamp>.json to the world",
+                        "folder on server shutdown (and via /linearreader export-stats).",
+                        "Disable after the benchmark run is complete — set to false or delete",
+                        "PregenExporter.java from the source tree.",
+                        "Default = false"
+                )
+                .define("pregenExportEnabled", false);
+
         SPEC = builder.build();
     }
 
@@ -193,7 +205,8 @@ public final class ForgeLinearConfig {
                 DISK_SPACE_WARN_GB.get(),
                 AUTO_RECOMPRESS_ENABLED.get(),
                 IDLE_THRESHOLD_MINUTES.get(),
-                RECOMPRESS_MIN_FREE_RAM_PERCENT.get()
+                RECOMPRESS_MIN_FREE_RAM_PERCENT.get(),
+                PREGEN_EXPORT_ENABLED.get()
         );
     }
 }

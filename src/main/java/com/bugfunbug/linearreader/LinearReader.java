@@ -1,7 +1,9 @@
 package com.bugfunbug.linearreader;
 
+import com.bugfunbug.linearreader.benchmark.PregenExporter;
 import com.bugfunbug.linearreader.command.LinearCommand;
 import com.bugfunbug.linearreader.config.ForgeLinearConfig;
+import com.bugfunbug.linearreader.config.LinearConfig;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -49,6 +51,9 @@ public class LinearReader {
 
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
+        if (LinearConfig.isPregenExportEnabled()) {
+            PregenExporter.onServerStopping(event.getServer());
+        }
         runtime.onServerStopping();
     }
 
