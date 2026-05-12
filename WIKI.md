@@ -29,8 +29,8 @@ This document contains detailed information on installation, configuration, and 
 On first launch, Linear will automatically convert any existing `.mca` world data to `.linear` format before the world loads. The original `.mca` files are deleted after a successful conversion.
 
 > [!WARNING]
-> **Back up your world before installing for the first time.** The conversion is irreversible without a backup.
-> Linear will refuse to delete `.mca` files if the conversion fails, allowing you to retry safely.
+> **Back up your world before installing for the first time.** While Linear now supports [converting back to Anvil](#format-reversion) via command, a full backup is still strongly recommended.
+> Linear will refuse to delete `.mca` files if the initial conversion fails, allowing you to retry safely.
 
 ---
 
@@ -80,6 +80,13 @@ Linear converts `.mca` files automatically when a world dimension is first opene
 - Each `.mca` file is read with vanilla `RegionFile` and written verbatim to a new `LinearRegionFile`.
 - Idempotent: if a `.linear` file already exists, the corresponding `.mca` is deleted.
 - Failed conversions leave the original `.mca` intact.
+
+### Reverting to Anvil (`.mca`)
+If you wish to uninstall the mod and return to the standard Minecraft format, you can use the `/linear revert-to-mca` command. This will:
+1. Scan all `.linear` files across all dimensions.
+2. Convert them back to standard `.mca` files.
+3. Shut down the server once complete.
+See the [Commands](#format-reversion) section for more details.
 
 ---
 
