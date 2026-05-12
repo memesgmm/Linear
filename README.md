@@ -151,7 +151,7 @@ C2ME bypasses `getChunkDataOutputStream` and calls `RegionFile.write(ChunkPos, B
 
 ## Performance Benchmarks
 
-![Linear Benchmark Graph](assets/benchmark_graph.png)
+![Linear Benchmark Graph](assets/benchmark_graph.svg)
 
 ### Test Environment
 - **Seed**: `9131502383106133584`
