@@ -86,7 +86,12 @@ Linear converts `.mca` files automatically when a world dimension is first opene
 If you wish to uninstall the mod and return to the standard Minecraft format, you can use the `/linear revert-to-mca` command. This will:
 1. Scan all `.linear` files across all dimensions.
 2. Convert them back to standard `.mca` files.
-3. Shut down the server once complete.
+3. **Self-Deletion**: The mod will attempt to delete its own `.jar` file from the `mods/` folder and delete its configuration files to ensure a clean uninstall.
+4. Shut down the server once complete.
+
+> [!CAUTION]
+> While the mod attempts to delete itself, some operating systems or launchers may lock the file. **Always verify that the Linear JAR has been removed from your `mods/` folder before restarting the server.** If the JAR remains, it may attempt to convert your world back to Linear format on the next boot.
+
 See the [Commands](#format-reversion) section for more details.
 
 ---
