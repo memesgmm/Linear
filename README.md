@@ -1,8 +1,24 @@
-<img src="https://img.shields.io/badge/NeoForge-1.21.x-orange?style=flat-square" alt="NeoForge 1.21.x" /> <img src="https://img.shields.io/badge/Java-21-blue?style=flat-square" alt="Java 21" /> <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" /> <img src="https://img.shields.io/badge/Zstd-1.5.5--11-purple?style=flat-square" alt="Zstd" />
+<img src="https://img.shields.io/badge/NeoForge-1.21.x--26.x-orange?style=flat-square" alt="NeoForge Support" /> <img src="https://img.shields.io/badge/Java-21%20%7C%2025-blue?style=flat-square" alt="Java Support" /> <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" /> <img src="https://img.shields.io/badge/Zstd-1.5.5--11-purple?style=flat-square" alt="Zstd" />
 
 # Linear
 
-**Linear** is a high-performance NeoForge mod (supporting 1.21.1 – 1.21.11) that replaces Minecraft's standard Anvil (`.mca`) region file format with the compressed [`.linear` format](https://github.com/xymb-endcrystalme/LinearRegionFileFormatTools), delivering dramatic reductions in world save size and save latency.
+**Linear** is a high-performance NeoForge mod that replaces Minecraft's standard Anvil (`.mca`) region file format with the compressed [`.linear` format](https://github.com/xymb-endcrystalme/LinearRegionFileFormatTools), delivering dramatic reductions in world save size and save latency.
+
+Starting with **v1.1**, Linear supports both the stable 1.21.x lifecycle and the new experimental 26.x NeoForge branches.
+
+---
+
+## 🛠️ Versioning & Compatibility
+
+Linear provides two distinct builds to cover different NeoForge lifecycles:
+
+| Build Target | Minecraft / NeoForge | Required Java | Filename Pattern |
+| :--- | :--- | :--- | :--- |
+| **Legacy** | 1.21.x (1.21.1 – 1.21.11) | **Java 21** | `Linear-1.21.x-1.1.0.jar` |
+| **Modern** | 26.x+ (Experimental) | **Java 25** | `Linear-26.x-1.1.0.jar` |
+
+> [!IMPORTANT]
+> Make sure you download the correct JAR for your Java version. The 26.x build **requires Java 25** and will not launch on older runtimes.
 
 ---
 
@@ -13,7 +29,7 @@ Linear is designed for efficiency at scale. Below are the results from a control
 ### 📊 Real-World Results
 **Test Case:** 2000-block radius pregeneration (Chunky)
 - **Seed:** `9131502383106133584` (Default Settings)
-- **Version:** NeoForge 1.21.x (1.21.1 – 1.21.11)
+- **Compatibility:** 1.21.x (Legacy) and 26.x (Modern)
 
 ![Linear Benchmark Graph](https://raw.githubusercontent.com/memesgmm/Linear/main/assets/benchmark_graph.svg)
 
