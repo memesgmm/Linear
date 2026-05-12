@@ -7,6 +7,7 @@ This document contains detailed information on installation, configuration, and 
 - [Installation](#installation)
 - [How It Works](#how-it-works)
 - [Automatic World Conversion](#automatic-world-conversion)
+    - [Reverting to Anvil](#reverting-to-anvil-mca)
 - [Configuration](#configuration)
 - [Compatibility](#compatibility)
 - [Commands](#commands)
