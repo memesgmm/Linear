@@ -30,7 +30,7 @@ dependencies {
 }
 
 neoForge {
-    version = neo_version
+    version = project.hasProperty('neoVersionOverride') ? project.neoVersionOverride : neo_version
 
     runs {
         configureEach {
@@ -96,8 +96,9 @@ tasks.withType(ProcessResources).configureEach {
         into 'META-INF/linear-libs'
         rename { 'zstd-jni.jar' }
     }
+    var mcVersion = project.hasProperty('mcVersionOverride') ? project.mcVersionOverride : minecraft_version
     var replaceProperties = [
-            minecraft_version      : minecraft_version,
+            minecraft_version      : mcVersion,
             neo_version            : neo_version,
             mod_id                 : mod_id,
             mod_name               : mod_name,

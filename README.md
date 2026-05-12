@@ -1,8 +1,8 @@
-<img src="https://img.shields.io/badge/NeoForge-1.21.1-orange?style=flat-square" alt="NeoForge 1.21.1" /> <img src="https://img.shields.io/badge/Java-21-blue?style=flat-square" alt="Java 21" /> <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" /> <img src="https://img.shields.io/badge/Zstd-1.5.5--11-purple?style=flat-square" alt="Zstd" />
+<img src="https://img.shields.io/badge/NeoForge-1.21.x-orange?style=flat-square" alt="NeoForge 1.21.x" /> <img src="https://img.shields.io/badge/Java-21-blue?style=flat-square" alt="Java 21" /> <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" /> <img src="https://img.shields.io/badge/Zstd-1.5.5--11-purple?style=flat-square" alt="Zstd" />
 
 # Linear
 
-**Linear** is a high-performance NeoForge 1.21.1 mod that replaces Minecraft's standard Anvil (`.mca`) region file format with the compressed [`.linear` format](https://github.com/xymb-endcrystalme/LinearRegionFileFormatTools), delivering dramatic reductions in world save size and save latency.
+**Linear** is a high-performance NeoForge mod (supporting 1.21.1 – 1.21.11) that replaces Minecraft's standard Anvil (`.mca`) region file format with the compressed [`.linear` format](https://github.com/xymb-endcrystalme/LinearRegionFileFormatTools), delivering dramatic reductions in world save size and save latency.
 
 ---
 
@@ -13,7 +13,7 @@ Linear is designed for efficiency at scale. Below are the results from a control
 ### 📊 Real-World Results
 **Test Case:** 2000-block radius pregeneration (Chunky)
 - **Seed:** `9131502383106133584` (Default Settings)
-- **Version:** NeoForge 1.21.1
+- **Version:** NeoForge 1.21.x (1.21.1 – 1.21.11)
 
 ![Linear Benchmark Graph](https://raw.githubusercontent.com/memesgmm/Linear/main/assets/benchmark_graph.svg)
 
