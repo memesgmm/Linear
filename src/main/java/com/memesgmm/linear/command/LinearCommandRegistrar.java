@@ -79,6 +79,10 @@ public final class LinearCommandRegistrar {
                                         .executes(LinearCommandRegistrar::executeExportStart))
                                 .then(Commands.literal("stop")
                                         .executes(LinearCommandRegistrar::executeExportStop)))
+                        .then(Commands.literal("revert-to-mca")
+                                .executes(LinearCommandRegistrar::executeRevertToMca)
+                                .then(Commands.literal("confirm")
+                                        .executes(LinearCommandRegistrar::executeRevertToMcaConfirm)))
         );
     }
 
@@ -554,5 +558,31 @@ public final class LinearCommandRegistrar {
         if (s < 60)   return String.format("%.0fs", s);
         if (s < 3600) return String.format("%.0fm %.0fs", s / 60, s % 60);
         return String.format("%.0fh %.0fm", s / 3600, (s % 3600) / 60);
+    }
+
+    private static long REVERT_CONFIRM_TIME = 0;
+
+    private static int executeRevertToMca(CommandContext<CommandSourceStack> ctx) {
+        REVERT_CONFIRM_TIME = System.currentTimeMillis();
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "§c§l[Linear] WARNING: This will convert the ENTIRE world back to .mca format and SHUT DOWN the server.\n" +
+                "§c§l[Linear] You MUST remove the mod after conversion is complete.\n" +
+                "§c§l[Linear] Type '/linear revert-to-mca confirm' within " + LinearConfig.getConfirmWindowSeconds() + "s to proceed."), false);
+        return 1;
+    }
+
+    private static int executeRevertToMcaConfirm(CommandContext<CommandSourceStack> ctx) {
+        if (System.currentTimeMillis() - REVERT_CONFIRM_TIME > LinearConfig.getConfirmWindowMs()) {
+            ctx.getSource().sendFailure(Component.literal("[Linear] Confirmation timed out."));
+            return 0;
+        }
+        LinearConfig.setRevertRequested(true);
+        ctx.getSource().getServer().getPlayerList().broadcastSystemMessage(
+                Component.literal("§c§l[Linear] Server is shutting down for world format conversion..."), false);
+        
+        // Use halt(false) to ensure the server stops as cleanly and quickly as possible
+        // so onServerStopping() can run the conversion.
+        ctx.getSource().getServer().halt(false);
+        return 1;
     }
 }

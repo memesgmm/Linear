@@ -17,6 +17,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -402,10 +403,59 @@ public final class LinearRuntime {
         }
 
         LinearRegionFile.shutdownBackupExecutor();
+        flushExecutor = null;
+        LOGGER.info("[Linear] Shutdown phase 1 complete — all region flushes finished.");
+    }
+
+    public void onServerStopped(MinecraftServer server) {
+        if (LinearConfig.isRevertRequested() && worldRoot != null) {
+            com.memesgmm.linear.linear.MCAConverter.revertWorld(worldRoot);
+            
+            // Cleanup metadata folder
+            try {
+                Path dataDir = worldRoot.resolve("data/linear");
+                if (Files.exists(dataDir)) {
+                    try (Stream<Path> s = Files.walk(dataDir)) {
+                        s.sorted(Comparator.reverseOrder()).forEach(p -> {
+                            try { Files.deleteIfExists(p); } catch (IOException ignored) {}
+                        });
+                    }
+                    LOGGER.info("[Linear] Deleted metadata folder: {}", dataDir);
+                }
+            } catch (Exception e) {
+                LOGGER.warn("[Linear] Could not fully clean up data/linear: {}", e.getMessage());
+            }
+
+            // Cleanup config file
+            try {
+                Path configPath = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get().resolve("linear-server.toml");
+                if (Files.deleteIfExists(configPath)) {
+                    LOGGER.info("[Linear] Deleted config file: {}", configPath);
+                }
+            } catch (Throwable t) {
+                LOGGER.warn("[Linear] Could not delete config file: {}", t.getMessage());
+            }
+
+            // Attempt to delete the mod JAR itself
+            try {
+                net.neoforged.fml.ModList.get().getModContainerById(MOD_ID).ifPresent(container -> {
+                    Path jarPath = container.getModInfo().getOwningFile().getFile().getFilePath();
+                    try {
+                        Files.deleteIfExists(jarPath);
+                        LOGGER.info("[Linear] Successfully deleted mod JAR: {}", jarPath);
+                    } catch (IOException e) {
+                        LOGGER.warn("[Linear] Could not delete mod JAR (likely locked): {}. It will be orphaned.", jarPath);
+                        jarPath.toFile().deleteOnExit();
+                    }
+                });
+            } catch (Throwable t) {
+                LOGGER.warn("[Linear] Failed to locate mod JAR for self-deletion.");
+            }
+        }
+
         worldRoot = null;
         PINNED_PATHS.clear();
-        flushExecutor = null;
-        LOGGER.info("[Linear] Shutdown complete — all region flushes finished.");
+        LOGGER.info("[Linear] Shutdown phase 2 complete.");
     }
 
     public void onLevelSave() {

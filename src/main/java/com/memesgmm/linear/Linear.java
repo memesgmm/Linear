@@ -28,7 +28,6 @@ public class Linear {
         modEventBus.addListener(this::onConfigReload);
 
         NeoForge.EVENT_BUS.register(this);
-        NeoForge.EVENT_BUS.addListener(LinearCommand::register);
     }
 
     private void onConfigLoad(ModConfigEvent.Loading event) {
@@ -67,5 +66,10 @@ public class Linear {
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
         runtime.onServerTick();
+    }
+
+    @SubscribeEvent
+    public void onServerStopped(net.neoforged.neoforge.event.server.ServerStoppedEvent event) {
+        runtime.onServerStopped(event.getServer());
     }
 }

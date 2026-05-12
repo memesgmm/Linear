@@ -36,6 +36,8 @@ public final class LinearConfig {
     private static volatile int     recompressMinFreeRamPercent = 15;
     /** When true, dumps a stats JSON to the world folder on server shutdown. */
     private static volatile boolean pregenExportEnabled = false;
+    /** When true, the mod will convert all .linear files back to .mca on shutdown. */
+    private static volatile boolean revertRequested = false;
 
     // -------------------------------------------------------------------------
     // Getters — called everywhere in mod logic
@@ -60,6 +62,8 @@ public final class LinearConfig {
     public static int     getRecompressMinFreeRamPercent() { return recompressMinFreeRamPercent; }
     /** Whether to auto-export benchmark stats JSON on server shutdown. */
     public static boolean isPregenExportEnabled()   { return pregenExportEnabled; }
+    public static boolean isRevertRequested()       { return revertRequested; }
+    public static void    setRevertRequested(boolean b) { revertRequested = b; }
 
     // -------------------------------------------------------------------------
     // Called by loader-specific config to push current values in

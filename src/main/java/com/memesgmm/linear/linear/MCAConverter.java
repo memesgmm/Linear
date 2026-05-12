@@ -205,4 +205,128 @@ public final class MCAConverter {
             }
         }
     }
+
+    /**
+     * Walks the entire world root and reverts all .linear files to .mca.
+     * Called during shutdown when reversal is requested.
+     */
+    public static void revertWorld(Path worldRoot) {
+        if (worldRoot == null || !Files.isDirectory(worldRoot)) return;
+
+        LinearRuntime.LOGGER.info("[Linear] Starting world-wide .linear -> .mca reversal...");
+
+        List<Path> linearFiles = new ArrayList<>();
+        try (Stream<Path> s = Files.walk(worldRoot)) {
+            s.filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().endsWith(".linear"))
+                    .forEach(linearFiles::add);
+        } catch (IOException e) {
+            LinearRuntime.LOGGER.error("[Linear] Reversal failed — cannot walk world folder: {}", e.getMessage());
+            return;
+        }
+
+        if (linearFiles.isEmpty()) {
+            LinearRuntime.LOGGER.info("[Linear] No .linear files found to revert.");
+            return;
+        }
+
+        int total = linearFiles.size();
+        LinearRuntime.LOGGER.info("[Linear] Reverting {} .linear file(s) to .mca...", total);
+
+        AtomicInteger doneOk  = new AtomicInteger(0);
+        AtomicInteger doneBad = new AtomicInteger(0);
+
+        int threads = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors()));
+        java.util.concurrent.ExecutorService pool =
+                java.util.concurrent.Executors.newFixedThreadPool(threads, r -> {
+                    Thread t = new Thread(r, "lr-reversal");
+                    t.setDaemon(true);
+                    return t;
+                });
+
+        for (Path linear : linearFiles) {
+            pool.submit(() -> {
+                try {
+                    revertOne(linear);
+                    int n = doneOk.incrementAndGet();
+                    if (n % 50 == 0 || n == total) {
+                        LinearRuntime.LOGGER.info("[Linear] Reversal progress: {}/{}", n, total);
+                    }
+                } catch (Exception e) {
+                    doneBad.incrementAndGet();
+                    LinearRuntime.LOGGER.error("[Linear] Failed to revert {}: {}",
+                            linear.getFileName(), e.getMessage());
+                }
+            });
+        }
+
+        pool.shutdown();
+        try {
+            pool.awaitTermination(60, java.util.concurrent.TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        LinearRuntime.LOGGER.info("[Linear] Reversal complete: {} ok, {} failed.", doneOk.get(), doneBad.get());
+    }
+
+    private static void revertOne(Path linearPath) throws IOException {
+        String fileName = linearPath.getFileName().toString();
+        String[] parts  = fileName.split("\\.");
+        int regionX     = Integer.parseInt(parts[1]);
+        int regionZ     = Integer.parseInt(parts[2]);
+        Path dir        = linearPath.getParent();
+        Path mcaPath    = dir.resolve("r." + regionX + "." + regionZ + ".mca");
+
+        // Already reverted on a previous run?
+        if (Files.exists(mcaPath)) {
+            Files.delete(linearPath);
+            return;
+        }
+
+        // We use LinearRegionFile for reading. It's safe since we just closed all live instances.
+        LinearRegionFile linear = new LinearRegionFile(linearPath, false, com.memesgmm.linear.util.LinearCompat.createDummyStorageInfo());
+        boolean success = false;
+        try {
+            try (RegionFile mca = com.memesgmm.linear.util.LinearCompat.createRegionFile(com.memesgmm.linear.util.LinearCompat.createDummyStorageInfo(), mcaPath, dir, false)) {
+                for (int i = 0; i < 1024; i++) {
+                    int lx = i % 32;
+                    int lz = i / 32;
+                    ChunkPos pos = new ChunkPos(regionX * 32 + lx, regionZ * 32 + lz);
+                    try (DataInputStream dis = linear.read(pos)) {
+                        if (dis == null) continue;
+                        byte[] nbt = dis.readAllBytes();
+                        try (DataOutputStream dos = mca.getChunkDataOutputStream(pos)) {
+                            dos.write(nbt);
+                        }
+                    }
+                }
+            }
+            success = true;
+        } finally {
+            LinearRegionFile.ALL_OPEN.remove(linear);
+            if (!success) {
+                Files.deleteIfExists(mcaPath);
+            }
+        }
+
+        if (success) {
+            Files.delete(linearPath);
+            // Also clean up the backup if it exists
+            try {
+                Path backupFile = LinearRegionFile.backupPathFor(linearPath);
+                if (Files.deleteIfExists(backupFile)) {
+                    // Try to delete parent backups/ folder if now empty
+                    Path backupDir = backupFile.getParent();
+                    if (backupDir != null && Files.isDirectory(backupDir)) {
+                        try (Stream<Path> s = Files.list(backupDir)) {
+                            if (!s.findAny().isPresent()) {
+                                Files.delete(backupDir);
+                            }
+                        }
+                    }
+                }
+            } catch (IOException ignored) {}
+        }
+    }
 }

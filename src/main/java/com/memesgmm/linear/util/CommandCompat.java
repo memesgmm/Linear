@@ -52,21 +52,15 @@ public class CommandCompat {
     }
 
     public static boolean hasPermission(CommandSourceStack source, int level) {
-        if (HAS_PERMISSION_METHOD != null) {
-            try {
+        try {
+            if (HAS_PERMISSION_METHOD != null) {
                 return (boolean) HAS_PERMISSION_METHOD.invoke(source, level);
-            } catch (Exception e) {
-                return false;
-            }
-        } else {
-            // New system logic
-            try {
+            } else {
                 Object permissions = PERMISSIONS_METHOD.invoke(source);
-                // For now, we only support level 2 (GAMEMASTERS) as that's what the mod needs
                 return (boolean) HAS_PERMISSION_NEW_METHOD.invoke(permissions, GAMEMASTER_PERMISSION);
-            } catch (Exception e) {
-                return false;
             }
+        } catch (Exception e) {
+            return false;
         }
     }
 }

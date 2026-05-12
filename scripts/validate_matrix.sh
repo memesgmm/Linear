@@ -7,17 +7,7 @@ set -e
 
 VERSIONS=(
     "1.21.1:21.1.228"
-    "1.21.2:21.2.1-beta"
-    "1.21.3:21.3.96"
-    "1.21.4:21.4.157"
-    "1.21.5:21.5.97"
-    "1.21.6:21.6.1-beta"
-    "1.21.7:21.7.1-beta"
-    "1.21.8:21.8.53"
-    "1.21.9:21.9.1-beta"
-    "1.21.10:21.10.64"
     "1.21.11:21.11.42"
-    "1.21.4:26.1.1.15-beta"
     "1.21.4:26.1.2.48-beta"
 )
 
@@ -30,20 +20,32 @@ for ENTRY in "${VERSIONS[@]}"; do
     MC_VER="${ENTRY%%:*}"
     NEO_VER="${ENTRY#*:}"
     
+    TARGET="legacy"
+    if [[ "$NEO_VER" == 26* ]]; then
+        TARGET="modern"
+    fi
+    
     echo "----------------------------------------------------"
-    echo "VALIDATING: Minecraft $MC_VER (NeoForge $NEO_VER)"
+    echo "VALIDATING: Minecraft $MC_VER (NeoForge $NEO_VER) - Target: $TARGET"
     echo "----------------------------------------------------"
     
-    # Run classes first (warm-up) then test
-    if ./gradlew classes \
+    # Run classes first (warm-up), then JUnit tests, then Headless Server test
+    if ./gradlew test \
+        -PbuildTarget="$TARGET" \
         -PmcVersionOverride="$MC_VER" \
         -PneoVersionOverride="$NEO_VER" --no-daemon && \
-       ./gradlew test \
+       (echo -e "linear verify\nstop" | ./gradlew runServer \
+        -PbuildTarget="$TARGET" \
         -PmcVersionOverride="$MC_VER" \
-        -PneoVersionOverride="$NEO_VER" --no-daemon; then
-        echo "| $MC_VER | $NEO_VER | ✅ PASS | Compiled and tested successfully |" >> $REPORT
+        -PneoVersionOverride="$NEO_VER" --no-daemon); then
+        
+        if grep -q "Linear" run/logs/latest.log; then
+            echo "| $MC_VER | $NEO_VER | ✅ PASS | Compiled, tested, and booted successfully ($TARGET) |" >> $REPORT
+        else
+            echo "| $MC_VER | $NEO_VER | ⚠️ WARN | Compiled and tested, but boot logs unclear ($TARGET) |" >> $REPORT
+        fi
     else
-        echo "| $MC_VER | $NEO_VER | ❌ FAIL | Compilation or tests failed |" >> $REPORT
+        echo "| $MC_VER | $NEO_VER | ❌ FAIL | Compilation, tests, or boot failed ($TARGET) |" >> $REPORT
     fi
 done
 

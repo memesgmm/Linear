@@ -2,9 +2,7 @@
 
 # Linear
 
-**Linear** is a high-performance NeoForge mod that replaces Minecraft's standard Anvil (`.mca`) region file format with the compressed [`.linear` format](https://github.com/xymb-endcrystalme/LinearRegionFileFormatTools), delivering dramatic reductions in world save size and save latency.
-
-Starting with **v1.1**, Linear supports both the stable 1.21.x lifecycle and the new experimental 26.x NeoForge branches.
+**Linear** is a NeoForge mod that replaces Minecraft's standard Anvil (`.mca`) region file format with the [`.linear` format](https://github.com/xymb-endcrystalme/LinearRegionFileFormatTools), designed for superior compression and optimized I/O patterns.
 
 ---
 
@@ -17,39 +15,25 @@ Linear provides two distinct builds to cover different NeoForge lifecycles:
 | **Legacy** | 1.21.x (1.21.1 – 1.21.11) | **Java 21** | `Linear-1.21.x-1.1.0.jar` |
 | **Modern** | 26.x+ (Experimental) | **Java 25** | `Linear-26.x-1.1.0.jar` |
 
-> [!IMPORTANT]
-> Make sure you download the correct JAR for your Java version. The 26.x build **requires Java 25** and will not launch on older runtimes.
+> ⚠️ **IMPORTANT**
+> 
+> Make sure you download the correct JAR for your Minecraft version. The 26.x build **will not launch on older versions of Minecraft.**
 
 ---
 
-## ⚡ Performance
+## 🏗️ Technical Overview
 
-Linear is designed for efficiency at scale. Below are the results from a controlled A/B test comparing a vanilla Anvil (`.mca`) world against the same world stored in `.linear`.
+Linear improves upon the standard Anvil format by redesigning how region data is compressed and written to disk.
 
-### 📊 Real-World Results
+### 💎 Advanced Compression
+Traditional Anvil storage (`.mca`) compresses each chunk individually using Zlib or Gzip. Linear instead compresses the **entire 32x32 chunk region** as a single block using **Zstandard**.
+- **Cross-Chunk Optimization**: By compressing the whole region, Zstd can find recurring data patterns across chunk boundaries, leading to significantly better compression ratios than per-chunk methods.
+- **Configurable Levels**: Users can tune the compression level to balance CPU usage and disk space savings.
 
-![Linear Benchmark Graph](https://raw.githubusercontent.com/memesgmm/Linear/main/assets/benchmark_graph.svg)
-
-| Metric | Anvil (Vanilla) | Linear (Compressed) | Impact |
-| :--- | :--- | :--- | :--- |
-| **Total World Size** | **193.05 MB** | **65.69 MB** | **66% Space Saved** |
-| **Region Files** | 88 files | 59 files | 33% fewer files |
-| **Avg. Save Latency** | ~4,200 ms | **~25 ms** | **160x Faster Saves** |
-
----
-
-### 🚀 Projected Savings at Scale
-Based on the verified 66% reduction ratio, here is how Linear scales for larger servers:
-
-| World Size (Vanilla) | World Size (Linear) | Disk Space Saved |
-| :--- | :--- | :--- |
-| 1 GB | **~340 MB** | 0.66 GB |
-| 10 GB | **~3.4 GB** | 6.60 GB |
-| 100 GB | **~34 GB** | **66.00 GB** |
-| 1 TB | **~348 GB** | **676.00 GB** |
-
-> ### 💡 TIP
-> Linear's whole-region Zstd compression becomes even more effective as worlds grow, as it can find more patterns across chunk boundaries than per-chunk compression can.
+### 🚀 I/O Efficiency
+Minecraft's Anvil format performs incremental, per-chunk writes. This results in numerous small, random I/O operations which can be inefficient on many storage types, especially under heavy load.
+- **Sequential Writes**: Linear writes the entire region as one contiguous file. This allows the operating system and storage hardware to handle the save operation as a single sequential write, reducing overhead and improving consistency.
+- **Simplified File Structure**: Linear eliminates the need for `.mcc` files (used by Anvil for chunks exceeding 1MB), keeping world data contained within a consistent region-to-file mapping.
 
 ---
 
