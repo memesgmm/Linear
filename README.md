@@ -15,7 +15,7 @@ Linear is designed for efficiency at scale. Below are the results from a control
 - **Seed:** `9131502383106133584` (Default Settings)
 - **Version:** NeoForge 1.21.1
 
-![Linear Benchmark Graph](assets/benchmark_graph.svg)
+![Linear Benchmark Graph](https://raw.githubusercontent.com/memesgmm/Linear/main/assets/benchmark_graph.svg)
 
 | Metric | Anvil (Vanilla) | Linear (Compressed) | Impact |
 | :--- | :--- | :--- | :--- |
@@ -35,14 +35,14 @@ Based on the verified 66% reduction ratio, here is how Linear scales for larger 
 | 100 GB | **~34 GB** | **66.00 GB** |
 | 1 TB | **~348 GB** | **676.00 GB** |
 
-> [!TIP]
+> ### 💡 TIP
 > Linear's whole-region Zstd compression becomes even more effective as worlds grow, as it can find more patterns across chunk boundaries than per-chunk compression can.
 
 ---
 
 ## ⚠️ Early Development
 
-> [!CAUTION]
+> ### ⚠️ CAUTION
 > **This mod is in early development.** While it has been tested, it modifies core world storage logic. 
 > **Always keep backups of your world.** The conversion from Anvil to Linear is automatic, but reversing it requires keeping a backup of your old world files.
 
