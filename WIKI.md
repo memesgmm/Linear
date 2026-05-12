@@ -10,6 +10,8 @@ This document contains detailed information on installation, configuration, and 
 - [Configuration](#configuration)
 - [Compatibility](#compatibility)
 - [Commands](#commands)
+- [Idle Recompression](#idle-recompression)
+- [Benchmarking & Telemetry](#benchmarking--telemetry)
 - [Building from Source](#building-from-source)
 - [License](#license)
 
@@ -35,28 +37,40 @@ On first launch, Linear will automatically convert any existing `.mca` world dat
 ## How It Works
 
 ### The `.linear` Format
-The `.linear` format stores all 1024 chunks of a region in a single contiguous file, compressed as a whole with **Zstd**.
+The `.linear` format stores all 1024 chunks of a region in a single contiguous file, compressed as a whole with **Zstandard**. Unlike the vanilla Anvil format (`.mca`), which compresses each chunk individually, Linear compresses the entire region. This allows the compression algorithm to exploit data redundancies across different chunks, leading to significantly smaller file sizes.
 
 ### Storage Architecture
-```
-RegionFileStorage
-  └── RegionFileStorageMixin         ← replaces all read/write/flush/close
-        ├── linearCache              ← LRU map: region coord → LinearRegionFile
-        └── regionCache              ← LRU map: region coord → LinearBackedRegionFile
-              └── LinearBackedRegionFile  ← RegionFile subclass (vanilla & C2ME compat)
-                    └── LinearRegionFile       ← core: loading, writing, flushing
-                          └── ZstdSupport      ← isolated classloader for zstd-jni
+```mermaid
+graph TD
+    subgraph "Minecraft Storage Layer"
+        RFSM[RegionFileStorageMixin]
+    end
+
+    subgraph "Linear Storage Core"
+        LC[linearCache - LRU Map]
+        RC[regionCache - LRU Map]
+        LBRF[LinearBackedRegionFile]
+        LRF[LinearRegionFile]
+        ZS[ZstdSupport]
+    end
+
+    RFSM -->|Intercepts I/O| LC
+    RFSM -->|Wraps Access| RC
+    RC --> LBRF
+    LBRF --> LRF
+    LRF -->|Native Compression| ZS
 ```
 
-### Write Path
-1. Raw (uncompressed) NBT bytes are stored in memory — region is marked `dirty`.
-2. After a configurable quiet period, `LinearRuntime` submits the region to a background executor.
-3. The executor compresses the entire region with Zstd and atomically renames a `.wip` file to the final `.linear` path.
+### Technical Highlights
+- **Threaded I/O**: All compression and disk writes are handled by a dedicated background executor to prevent server thread stalls.
+- **Zstd Isolation**: Uses an isolated classloader for `zstd-jni` to avoid version conflicts with other mods.
+- **Concurrent Access**: Uses per-region read/write locks, allowing multiple threads to read chunks from the same region simultaneously while ensuring write safety.
+- **Checksum Verification**: Every `.linear` file includes a CRC32 checksum for the entire compressed block, validated on every load.
 
-### Read Path
-1. A call to `read(ChunkPos)` reaches `RegionFileStorageMixin`.
-2. `LinearRegionFile.read()` triggers `loadIfNeeded()` under a per-region write-lock on first access.
-3. Subsequent reads use a per-region read-lock, allowing full concurrency across the region.
+### Read/Write Lifecycle
+1. **Read Path**: `RegionFileStorageMixin` checks `linearCache`. If not present, `LinearRegionFile` loads and decompresses the entire region into memory.
+2. **Write Path**: Chunks are written to a memory buffer. When the region becomes "dirty," it is scheduled for a background flush.
+3. **Background Flush**: The executor compresses the memory buffer using Zstandard and performs an atomic rename (`.wip` -> `.linear`) to ensure data integrity even during crashes.
 
 ---
 
@@ -71,12 +85,33 @@ Linear converts `.mca` files automatically when a world dimension is first opene
 
 ## Configuration
 
-Configuration is stored in `config/linear-server.toml`:
+Configuration is stored in `config/linear-server.toml`.
 
-- `compressionLevel`: Zstd compression level (1–22). Default: 6.
-- `syncWrites`: Whether to write in dsync mode (safer but slower).
-- `backup.enabled`: Enable automatic `.bak` rotation.
-- `backup.intervalMinutes`: Minutes between backup refreshes.
+### General Settings
+- `compressionLevel` (1–22): Zstd compression level used for normal writes. Recommended: 4-6. Default: `4`.
+- `regionCacheSize` (8–1024): Maximum number of region files kept in RAM. Default: `256`.
+- `slowIoThresholdMs`: Logging threshold for slow disk operations. Set to `-1` to disable. Default: `500`.
+- `diskSpaceWarnGb`: Warn if free disk space falls below this value. Set to `-1` to disable. Default: `1`.
+
+### Backup Settings
+- `backupEnabled`: Enable automatic `.linear.bak` rotation. Default: `true`.
+- `backupMinChangedChunks`: Minimum chunk changes before a backup refresh. Default: `32`.
+- `backupMinChangedKb`: Minimum changed payload (KB) before a backup refresh. Default: `2048`.
+- `backupMaxAgeMinutes`: Maximum age of a changed backup before refresh. Default: `30`.
+- `backupQuietSeconds`: Required region "quiet time" before a backup is allowed. Default: `60`.
+
+### Save Throttling
+- `regionsPerSaveTick` (1–64): Max regions flushed to background executor per tick during world save. Default: `4`.
+- `pressureFlushMinDirtyRegions` / `pressureFlushMaxDirtyRegions`: Bounds for the dynamic backlog flusher. Default: `4` / `16`.
+- `confirmWindowSeconds`: Confirmation window for destructive commands. Default: `60`.
+
+### Idle Recompression
+- `autoRecompressEnabled`: Enable background upgrading of files to level 22 during idle time. Default: `true`.
+- `idleThresholdMinutes`: Minutes of zero I/O activity required to start recompression. Default: `20`.
+- `recompressMinFreeRamPercent`: Safety threshold for JVM heap headroom during recompression. Default: `15`.
+
+### Benchmarking
+- `pregenExportEnabled`: Automatically export JSON stats on server shutdown. Default: `false`.
 
 ---
 
@@ -86,9 +121,10 @@ Configuration is stored in `config/linear-server.toml`:
 | :--- | :---: | :--- |
 | **NeoForge 1.21.x** | ✅ | Stable lifecycle (Java 21) |
 | **NeoForge 26.x+** | ✅ | Modern lifecycle (Java 25) |
-| **C2ME** | ✅ | Full async write/clear path intercepted |
-| **Distant Horizons** | ✅ | Pregen monitor pauses eviction during heavy pregen |
-| **Sable / Sublevels** | ✅ | Automatic conversion for each sub-level |
+| **C2ME** | ✅ | Full async write/clear path intercepted for maximum compatibility |
+| **Distant Horizons** | ✅ | Pregen monitor automatically pauses cache eviction during heavy world pregeneration |
+| **Sable / Sublevels** | ✅ | Automatic conversion and storage support for each sub-level dimension |
+| **Chunky** | ✅ | Recommended for pregenerating worlds to fill Linear cache efficiently |
 
 Linear does **not** alter the NBT data inside chunks. Any mod that reads vanilla NBT will work without modification.
 
@@ -96,12 +132,56 @@ Linear does **not** alter the NBT data inside chunks. Any mod that reads vanilla
 
 ## Commands
 
-Requires operator permission level 4.
+Requires operator permission level 2 or higher (configurable via NeoForge permission API).
 
-- `/linear stats`: Displays live I/O statistics and memory usage.
-- `/linear prune-chunks`: Dry-run analysis for safe chunk deletion.
-- `/linear prune-chunks confirm`: Permanently delete empty/never-visited chunks.
-- `/linear sync-backups`: Force an immediate backup refresh of all loaded regions.
+### Diagnostic & Info
+- `/linear pos`: Displays block, chunk, and region coordinates for your current position.
+- `/linear cache_info`: Shows live RAM usage, dirty regions, and open file counts.
+- `/linear storage`: Scans the world folder to display total disk usage of `.linear` and `.linear.bak` files.
+- `/linear verify`: Starts a background thread to verify the integrity and checksums of every `.linear` file on disk.
+- `/linear bench [debug | reset]`: Displays real-time I/O statistics, phase timings, and compression ratios. Use `debug` for internal phase latency.
+
+### Utility & Maintenance
+- `/linear sync-backups`: Forces an immediate backup refresh for all modified regions.
+- `/linear prune-chunks`: Analyzes the world for never-visited or empty chunks that can be safely deleted.
+- `/linear prune-chunks confirm`: Permanently deletes analyzed chunks.
+- `/linear pin` / `/linear unpin`: Prevents or allows a specific region from being evicted from the RAM cache.
+
+### Background Operations
+- `/linear afk-compress [status | start | stop]`: Manages the background recompression worker which upgrades old files to level 22 compression during idle time.
+- `/linear export-mca [status | start | stop]`: Copies the current Linear world back to Anvil (`.mca`) format in a separate folder (`<world>_mca_export/`). The active world is not modified.
+- `/linear export-stats`: Manually triggers a JSON benchmark export (requires `pregenExportEnabled` to be true).
+
+### Format Reversion
+- `/linear revert-to-mca`: Prepares the server to convert the entire world back to `.mca` format.
+- `/linear revert-to-mca confirm`: **Destructive**. Converts all files back to `.mca` and immediately shuts down the server. The mod must be removed manually before restarting.
+
+## Idle Recompression
+
+Linear includes an intelligent background worker designed to maximize storage efficiency during server idle time.
+
+### How it Works
+1. **Activity Monitor**: The mod tracks the time since the last chunk read or write across all dimensions.
+2. **Idle Trigger**: Once the server has been idle for `idleThresholdMinutes`, the recompression worker starts.
+3. **Deep Compression**: The worker scans all `.linear` files and upgrades them to **Zstd level 22**. Normal gameplay writes use level 4-6 to save CPU time; idle time is used to shrink files further without affecting TPS.
+4. **Safety Checks**: The worker automatically pauses if the server becomes active again or if available RAM falls below `recompressMinFreeRamPercent`.
+
+---
+
+## Benchmarking & Telemetry
+
+Linear is designed with transparency in mind, providing granular telemetry for performance analysis.
+
+### Real-time Stats
+Use `/linear bench` to see current I/O performance. 
+- **Saved**: Total percentage of disk space saved compared to raw NBT data.
+- **Phases**: Phase timings (zstd, disk, crc) help identify hardware bottlenecks.
+
+### Automated Export
+For formal benchmarking (e.g., using **Chunky**), enable `pregenExportEnabled` in the config.
+- A comprehensive JSON report is generated in the world folder on server shutdown.
+- The report includes chunk read/write averages, cache hit rates, and total disk footprint.
+- Ideal for comparing Linear against vanilla MCA performance on identical hardware.
 
 ---
 
