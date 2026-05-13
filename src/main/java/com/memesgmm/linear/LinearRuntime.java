@@ -460,21 +460,25 @@ public final class LinearRuntime {
         if (flushExecutor == null || flushExecutor.isShutdown()) return;
         LinearRuntime.LOGGER.debug("[Linear] LinearRuntime.onLevelSave called");
 
-
-        int queued = 0;
+        int submitted = 0;
         for (LinearRegionFile region : LinearRegionFile.ALL_OPEN) {
-            if (region.isDirty() && queueRegion(region)) {
-                queued++;
+            if (region.isDirty()) {
+                // Force immediate background flush during world save/pause
+                // We bypass the 10-second quiet timer here because this is a 
+                // deliberate save point where durability is more important than CPU.
+                if (queuedRegions.remove(region)) {
+                    flushQueue.remove(region);
+                    queuedFlushCount.decrementAndGet();
+                }
+
+                if (submitBackgroundFlush(region)) {
+                    submitted++;
+                }
             }
         }
-        if (queued > 0) {
-            int ratePerTick = DHPregenMonitor.effectiveRegionsPerSaveTick();
-            if (queued > ratePerTick * 5) {
-                LOGGER.info("[Linear] World save: {} dirty region(s) queued (draining at {} per tick).",
-                        queued, ratePerTick);
-            } else {
-                LOGGER.debug("[Linear] World save: {} dirty region(s) queued.", queued);
-            }
+
+        if (submitted > 0) {
+            LOGGER.info("[Linear] World save: {} region(s) pushed to background flusher.", submitted);
         }
     }
 
@@ -517,24 +521,36 @@ public final class LinearRuntime {
             it.remove();
             queuedRegions.remove(region);
             queuedFlushCount.decrementAndGet();
-            if (!inFlightFlushes.add(region)) continue;
-            inFlightFlushCount.incrementAndGet();
-            submitted++;
-            flushExecutor.submit(() -> {
-                try {
-                    region.flush(true);
-                } catch (Throwable t) {
-                    LOGGER.error("[Linear] Async flush failed for {}: {}",
-                            region, t.getMessage(), t);
-                } finally {
-                    inFlightFlushes.remove(region);
-                    inFlightFlushCount.decrementAndGet();
-                }
-            });
+            
+            if (submitBackgroundFlush(region)) {
+                submitted++;
+            }
         }
     }
 
+    private boolean submitBackgroundFlush(LinearRegionFile region) {
+        if (flushExecutor == null || flushExecutor.isShutdown()) return false;
+        
+        // Ensure we aren't already flushing this exact region
+        if (!inFlightFlushes.add(region)) return false;
+        
+        inFlightFlushCount.incrementAndGet();
+        flushExecutor.submit(() -> {
+            try {
+                region.flush(true);
+            } catch (Throwable t) {
+                LOGGER.error("[Linear] Async flush failed for {}: {}",
+                        region, t.getMessage(), t);
+            } finally {
+                inFlightFlushes.remove(region);
+                inFlightFlushCount.decrementAndGet();
+            }
+        });
+        return true;
+    }
+
     private boolean queueRegion(LinearRegionFile region) {
+        if (inFlightFlushes.contains(region)) return false;
         if (!queuedRegions.add(region)) return false;
         flushQueue.add(region);
         queuedFlushCount.incrementAndGet();
@@ -544,11 +560,18 @@ public final class LinearRuntime {
     /**
      * Safely queues a region for asynchronous background flushing.
      * This avoids blocking the caller (e.g., IOWorker) while the region is compressed.
+     * In this implementation, we submit it to the background thread immediately to
+     * ensure data is saved even if the game is paused.
      */
     public static void queueDirtyRegionForBackground(LinearRegionFile region) {
         LinearRuntime instance = INSTANCE;
         if (instance != null) {
-            instance.queueRegion(region);
+            // Remove from the 'quiet' queue if it was waiting there
+            if (instance.queuedRegions.remove(region)) {
+                instance.flushQueue.remove(region);
+                instance.queuedFlushCount.decrementAndGet();
+            }
+            instance.submitBackgroundFlush(region);
         }
     }
 
