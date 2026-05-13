@@ -42,12 +42,16 @@ public abstract class RegionFileStorageMixin {
 
     @Unique
     private Long2ObjectLinkedOpenHashMap<LinearRegionFile> linearCache;
+    
+    @Unique
+    private Path normalizedFolder;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void initLinearCache(CallbackInfo ci) {
         linearCache = new Long2ObjectLinkedOpenHashMap<>();
         if (folder == null) return;
-        LinearRuntime.LOGGER.info("[Linear] RegionFileStorage folder: {}", folder.toAbsolutePath());
+        normalizedFolder = folder.toAbsolutePath().normalize();
+        LinearRuntime.LOGGER.info("[Linear] RegionFileStorage folder: {}", normalizedFolder);
         MCAConverter.convertFolder(folder);
         IdleRecompressor.registerFolder(folder);
     }
@@ -195,20 +199,21 @@ public abstract class RegionFileStorageMixin {
     /**
      * @author LinearReader
      * @reason Flush Linear region files.
-     *         Snapshots the region list under lock, then flushes outside the lock so
-     *         flush I/O (which can take 100–5000ms) never blocks concurrent reads/writes.
+     *         Flushes all dirty regions belonging to this storage, including those
+     *         recently evicted from the cache but not yet written to disk.
      */
     @Overwrite
     public void flush() throws IOException {
-        final List<LinearRegionFile> toFlush;
-        synchronized (this) {
-            toFlush = new ArrayList<>();
-            for (LinearRegionFile region : linearCache.values()) {
-                if (region.isDirty()) {
-                    toFlush.add(region);
-                }
+        final List<LinearRegionFile> toFlush = new ArrayList<>();
+        Path targetDir = normalizedFolder;
+        if (targetDir == null) return;
+
+        for (LinearRegionFile region : LinearRegionFile.ALL_OPEN) {
+            if (region.isDirty() && targetDir.equals(region.getNormalizedPath().getParent())) {
+                toFlush.add(region);
             }
         }
+
         try {
             LinearRuntime.flushRegionsBlocking(toFlush);
         } catch (IOException e) {

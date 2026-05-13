@@ -80,7 +80,7 @@ public class LinearRegionFile implements AutoCloseable {
     private static final int  MIN_RESIDENT_HOT_SET = 24;
     private static final AtomicLong LAST_RESIDENT_TRIM_NS = new AtomicLong(0L);
     // Background flushes should target regions that have actually gone quiet, not hot ones.
-    private static final long QUIET_FLUSH_DELAY_NS = 15_000_000_000L;
+    private static final long QUIET_FLUSH_DELAY_NS = 10_000_000_000L;
     private static final long PRESSURE_FLUSH_MIN_AGE_NS = 3_000_000_000L;
     private static final long BACKGROUND_FLUSH_COOLDOWN_NS = 15_000_000_000L;
 

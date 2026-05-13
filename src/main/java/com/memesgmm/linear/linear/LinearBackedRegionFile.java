@@ -134,6 +134,11 @@ public final class LinearBackedRegionFile extends RegionFile {
         return linear.hasChunk(pos);
     }
 
+    @Override
+    public synchronized void flush() throws IOException {
+        linear.flush();
+    }
+
     /**
      * No-op — the underlying {@link LinearRegionFile} is closed via
      * {@code RegionFileStorageMixin.linearCache}.

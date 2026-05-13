@@ -254,9 +254,7 @@ public final class LinearRuntime {
     }
 
     private boolean shouldQueueBackgroundFlush(LinearRegionFile region, long nowNs) {
-        if (!region.shouldBackgroundFlush(nowNs)) return false;
-        if (!dedicatedServer) return false;
-        return true;
+        return region.shouldBackgroundFlush(nowNs);
     }
 
     private void initExecutor() {
@@ -461,14 +459,7 @@ public final class LinearRuntime {
     public void onLevelSave() {
         if (flushExecutor == null || flushExecutor.isShutdown()) return;
         LinearRuntime.LOGGER.debug("[Linear] LinearRuntime.onLevelSave called");
-        if (!dedicatedServer) {
 
-            // Integrated servers share a JVM with the client render thread.
-            // Draining full-region compression work in the background causes
-            // visible multi-second stalls while exploring, so singleplayer
-            // relies on vanilla save barriers instead of async save draining.
-            return;
-        }
 
         int queued = 0;
         for (LinearRegionFile region : LinearRegionFile.ALL_OPEN) {
