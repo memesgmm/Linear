@@ -38,7 +38,7 @@ jobs:
           game-versions: |
             1.21
             1.21.1
-          files: output_jars/linear-1.21.1-*-legacy.jar
+          files: output_jars/linear-legacy.jar
           changelog: ${{ github.event.release.body }}
 
       - name: Publish Modern (NeoForge 26+) to Modrinth
@@ -51,5 +51,5 @@ jobs:
           loaders: neoforge
           game-versions: |
             26.1.x
-          files: output_jars/linear-26.1.2-*-modern.jar
+          files: output_jars/linear-modern.jar
           changelog: ${{ github.event.release.body }}
