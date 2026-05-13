@@ -12,8 +12,8 @@ Linear provides two distinct builds to cover different NeoForge lifecycles:
 
 | Build Target | Minecraft / NeoForge | Required Java | Filename Pattern |
 | :--- | :--- | :--- | :--- |
-| **Legacy** | 1.21.x (1.21.1 – 1.21.11) | **Java 21** | `Linear-1.21.x-1.1.0.jar` |
-| **Modern** | 26.x+ (Experimental) | **Java 25** | `Linear-26.x-1.1.0.jar` |
+| **Legacy** | 1.21.x (1.21.1 – 1.21.11) | **Java 21** | `linear-1.21.1-1.3.3+legacy.jar` |
+| **Modern** | 26.x+ (Experimental) | **Java 25** | `linear-26.1.2-1.3.3+modern.jar` |
 
 > ⚠️ **IMPORTANT**
 > 

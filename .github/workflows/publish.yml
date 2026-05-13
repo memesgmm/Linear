@@ -32,12 +32,13 @@ jobs:
         with:
           token: ${{ secrets.MODRINTH_TOKEN }}
           project: ${{ secrets.MODRINTH_PROJECT_ID }}
-          version: ${{ github.event.release.tag_name || github.event.inputs.version }}-legacy
+          version: ${{ github.event.release.tag_name || github.event.inputs.version }}+legacy
           name: "Linear v${{ github.event.release.tag_name || github.event.inputs.version }} (1.21.x Legacy)"
           loaders: neoforge
           game-versions: |
-            1.21
             1.21.1
+            1.21.11
+            21.1.x
           files: output_jars/linear-legacy.jar
           changelog: ${{ github.event.release.body }}
 
@@ -46,8 +47,8 @@ jobs:
         with:
           token: ${{ secrets.MODRINTH_TOKEN }}
           project: ${{ secrets.MODRINTH_PROJECT_ID }}
-          version: ${{ github.event.release.tag_name || github.event.inputs.version }}-modern
-          name: "Linear v${{ github.event.release.tag_name || github.event.inputs.version }} (NeoForge 26+ Modern)"
+          version: ${{ github.event.release.tag_name || github.event.inputs.version }}+modern
+          name: "Linear v${{ github.event.release.tag_name || github.event.inputs.version }} (26.x Modern)"
           loaders: neoforge
           game-versions: |
             26.1.x
