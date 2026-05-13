@@ -541,6 +541,17 @@ public final class LinearRuntime {
         return true;
     }
 
+    /**
+     * Safely queues a region for asynchronous background flushing.
+     * This avoids blocking the caller (e.g., IOWorker) while the region is compressed.
+     */
+    public static void queueDirtyRegionForBackground(LinearRegionFile region) {
+        LinearRuntime instance = INSTANCE;
+        if (instance != null) {
+            instance.queueRegion(region);
+        }
+    }
+
     private void loadPins() {
         PINNED_PATHS.clear();
 

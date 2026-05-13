@@ -199,26 +199,18 @@ public abstract class RegionFileStorageMixin {
     /**
      * @author LinearReader
      * @reason Flush Linear region files.
-     *         Flushes all dirty regions belonging to this storage, including those
-     *         recently evicted from the cache but not yet written to disk.
+     *         Queues all dirty regions belonging to this storage for background flushing,
+     *         including those recently evicted from the cache but not yet written to disk.
      */
     @Overwrite
     public void flush() throws IOException {
-        final List<LinearRegionFile> toFlush = new ArrayList<>();
         Path targetDir = normalizedFolder;
         if (targetDir == null) return;
 
         for (LinearRegionFile region : LinearRegionFile.ALL_OPEN) {
             if (region.isDirty() && targetDir.equals(region.getNormalizedPath().getParent())) {
-                toFlush.add(region);
+                LinearRuntime.queueDirtyRegionForBackground(region);
             }
-        }
-
-        try {
-            LinearRuntime.flushRegionsBlocking(toFlush);
-        } catch (IOException e) {
-            LinearRuntime.LOGGER.error("[Linear] Flush error: {}", e.getMessage(), e);
-            throw e;
         }
     }
 

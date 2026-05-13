@@ -5,6 +5,7 @@ import net.minecraft.world.level.chunk.storage.RegionFile;
 import sun.misc.Unsafe;
 
 import com.memesgmm.linear.LinearStats;
+import com.memesgmm.linear.LinearRuntime;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -136,7 +137,7 @@ public final class LinearBackedRegionFile extends RegionFile {
 
     @Override
     public synchronized void flush() throws IOException {
-        linear.flush();
+        LinearRuntime.queueDirtyRegionForBackground(linear);
     }
 
     /**

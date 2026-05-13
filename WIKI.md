@@ -198,6 +198,23 @@ For formal benchmarking (e.g., using **Chunky**), enable `pregenExportEnabled` i
 
 ---
 
+## Stress Testing
+
+Linear includes a built-in stress test suite (`LinearStressTest.java`) designed to simulate extreme concurrency and identify edge cases like lock contention or data corruption.
+
+### What it does:
+- **`IOWorker` Simulation**: Simulates Minecraft's internal single-threaded I/O queue to catch operations that might block the main server thread.
+- **High Concurrency**: Spawns multiple threads that constantly read and write chunks simultaneously, bypassing standard Minecraft thread locks to aggressively stress test the `.linear` format.
+- **Latency Monitoring**: Tracks the time taken for every read, write, and flush operation. If any operation stalls for more than 1 second, the test automatically fails.
+- **Data Integrity**: Upon completion, a final flush is forced, and the file is reopened to verify that 100% of the randomly generated chunk data matches the in-memory expectations exactly.
+
+You can run the stress test via Gradle:
+```bash
+./gradlew test --tests "*LinearStressTest*"
+```
+
+---
+
 ## Building from Source
 
 **Requirements:** JDK 21 (for Legacy) or JDK 25 (for Modern), Gradle 8.10+
